@@ -78,11 +78,11 @@ void main() {
     // a quello di una chiave sbagliata: meglio dirlo prima.
     expect(
         Settings.looksLikeOpenRouterKey(
-            'sk-or-v1-d6b778760354d66bab1c7677e02050141980edc'),
+            'sk-or-v1-0000000000000000000000000000000000000000'),
         isTrue);
     expect(
         Settings.looksLikeOpenRouterKey(
-            "sk'or'v1'd6b778760354d66bab1c7677e02050141980edc"),
+            "sk'or'v1'0000000000000000000000000000000000000000"),
         isFalse);
     expect(Settings.looksLikeOpenRouterKey('sk-or-v1-'), isFalse);
     expect(Settings.looksLikeOpenRouterKey(''), isFalse);

@@ -4,3 +4,7 @@ data/gtfs/
 __pycache__/
 validation/logs/
 validation/ALERT-*.md
+app/build/
+app/.dart_tool/
+app/ios/Pods/
+app/.flutter-plugins*

@@ -145,7 +145,8 @@ class OpenAiCompatibleClient implements LlmClient {
     }
 
     if (r.statusCode != 200) {
-      throw LlmException(name, _snippet(r.body), statusCode: r.statusCode);
+      throw LlmException(name, _snippet(r.body),
+          statusCode: r.statusCode, retryAfter: _resetTime(r.body));
     }
 
     try {
@@ -165,6 +166,23 @@ class OpenAiCompatibleClient implements LlmClient {
       rethrow;
     } on Object catch (e) {
       throw LlmException(name, 'risposta illeggibile: $e');
+    }
+  }
+
+  /// OpenRouter mette l'istante di reset dentro il corpo dell'errore,
+  /// in millisecondi epoch. Va letto: sapere QUANDO riprovare e' molto
+  /// piu' utile che sapere solo che non si puo'.
+  static DateTime? _resetTime(String body) {
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      final headers = ((json['error'] as Map<String, dynamic>?)?['metadata']
+          as Map<String, dynamic>?)?['headers'] as Map<String, dynamic>?;
+      final raw = headers?['X-RateLimit-Reset'];
+      final ms = raw is int ? raw : int.tryParse('$raw');
+      if (ms == null || ms <= 0) return null;
+      return DateTime.fromMillisecondsSinceEpoch(ms);
+    } on Object {
+      return null;
     }
   }
 

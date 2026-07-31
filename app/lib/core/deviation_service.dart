@@ -192,8 +192,14 @@ class DeviationService {
   static String explainExtractionFailure(ExtractionResult r) {
     final detail = r.detail ?? '';
     if (detail.contains('free-models-per-day')) {
+      // L'orario si dice in ORA LOCALE. Il fornitore ragiona in UTC, ma
+      // chi legge il messaggio all'una di notte no: "si azzerano a
+      // mezzanotte UTC" sembra sbagliato quando la mezzanotte e' passata
+      // da un'ora.
+      final when = _localTime(r.retryAfter);
       return 'Ho finito le richieste gratuite di oggi (sono 50). '
-          'Si azzerano a mezzanotte UTC.';
+          '${when == null ? "Si azzerano a mezzanotte UTC, cioè alle 2 di "
+              "notte in Italia." : "Riprova dopo le $when."}';
     }
     if (detail.contains('429')) {
       return 'Il servizio è momentaneamente sovraccarico. Riprova fra poco.';
@@ -211,6 +217,14 @@ class DeviationService {
           'il percorso.';
     }
     return 'Non sono riuscito a interpretare il testo dell\'avviso.';
+  }
+
+  /// L'orario in cui riprovare, nel fuso di chi legge.
+  static String? _localTime(DateTime? utcOrLocal) {
+    if (utcOrLocal == null) return null;
+    final t = utcOrLocal.toLocal();
+    return '${t.hour.toString().padLeft(2, "0")}:'
+        '${t.minute.toString().padLeft(2, "0")}';
   }
 
   Future<DeviationReport> _analyze(RawNotice notice, RouteShape shape) async {

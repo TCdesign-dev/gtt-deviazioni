@@ -6,14 +6,26 @@ import 'package:gtt_deviazioni/core/pipeline/extractor.dart';
 /// qualcosa. "Errore" non aiuta nessuno; "hai finito le richieste di oggi"
 /// si', perche' dice anche che domani funzionera'.
 void main() {
-  String why(String? detail, {ExtractionStatus status = ExtractionStatus.error}) =>
-      DeviationService.explainExtractionFailure(
-          ExtractionResult(status: status, detail: detail));
+  String why(String? detail,
+          {ExtractionStatus status = ExtractionStatus.error,
+          DateTime? retryAfter}) =>
+      DeviationService.explainExtractionFailure(ExtractionResult(
+          status: status, detail: detail, retryAfter: retryAfter));
 
-  test('quota giornaliera esaurita: e azionabile, va detto', () {
+  test('quota esaurita: dice QUANDO riprovare, in ora locale', () {
+    // Il fornitore ragiona in UTC; chi legge il messaggio all'una di notte
+    // no. Dire "mezzanotte UTC" alle 01:17 sembra semplicemente sbagliato.
+    final msg = why('LlmException(429): free-models-per-day exceeded',
+        retryAfter: DateTime(2026, 8, 1, 2, 0));
+    expect(msg, contains('richieste gratuite'));
+    expect(msg, contains('02:00'));
+    expect(msg, isNot(contains('UTC')));
+  });
+
+  test('senza orario dal fornitore, traduce comunque in ora italiana', () {
     final msg = why('LlmException(429): free-models-per-day exceeded');
     expect(msg, contains('richieste gratuite'));
-    expect(msg, contains('mezzanotte'));
+    expect(msg, contains('2 di notte'));
   });
 
   test('sovraccarico momentaneo e diverso da quota finita', () {

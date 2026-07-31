@@ -115,12 +115,16 @@ class ExtractionResult {
     this.deviations = const [],
     this.detail,
     this.attempts = 1,
+    this.retryAfter,
   });
 
   final ExtractionStatus status;
   final List<ParsedDeviation> deviations;
   final String? detail;
   final int attempts;
+
+  /// Quando riprovare, se il fornitore l'ha detto.
+  final DateTime? retryAfter;
 
   bool get isUsable => status == ExtractionStatus.ok && deviations.isNotEmpty;
 
@@ -284,7 +288,11 @@ ${notice.fullText}
         raw = await llm.complete(prompt, jsonSchema: responseSchema);
       } on LlmException catch (e) {
         return ExtractionResult(
-            status: ExtractionStatus.error, detail: '$e', attempts: attempt);
+          status: ExtractionStatus.error,
+          detail: '$e',
+          attempts: attempt,
+          retryAfter: e.retryAfter,
+        );
       }
 
       final parsed = _tryParse(raw);

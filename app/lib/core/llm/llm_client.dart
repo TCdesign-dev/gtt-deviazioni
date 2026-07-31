@@ -26,11 +26,19 @@ abstract class LlmClient {
 }
 
 class LlmException implements Exception {
-  LlmException(this.provider, this.detail, {this.statusCode});
+  LlmException(this.provider, this.detail, {this.statusCode, this.retryAfter});
 
   final String provider;
   final String detail;
   final int? statusCode;
+
+  /// Quando ha senso riprovare, se il fornitore lo dice.
+  ///
+  /// OpenRouter manda `X-RateLimit-Reset` dentro il corpo dell'errore. E'
+  /// un'informazione che l'utente puo' usare — "riprova dopo le 02:00" —
+  /// e buttarla via per poi dire genericamente "quota esaurita" sarebbe
+  /// uno spreco.
+  final DateTime? retryAfter;
 
   @override
   String toString() =>

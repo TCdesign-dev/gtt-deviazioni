@@ -1,0 +1,643 @@
+{
+  "schema_ref": "SPECIFICA-Rilevatore-Deviazioni-GTT.md §5.2.1",
+  "generated_at": "2026-07-31",
+  "annotated_by": "claude",
+  "status": "PROPOSTA — da verificare a mano prima di usarla come ground truth",
+  "caveat": "Queste annotazioni sono state prodotte da un LLM. Usarle per valutare un parser LLM misura meno di quanto sembri: gli errori sistematici condivisi restano invisibili. Servono come punto di partenza e per intercettare regressioni, non come verità assoluta. Rivedi per primi i casi con confidence 'bassa'.",
+  "attribution": "Testi: GTT S.p.A. — licenza CC-BY",
+  "annotations": {
+    "web-002": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["1C Festiva"],
+        "direction_desc": "via Rocchette",
+        "deviation_type": "deviazione",
+        "municipality": "Chieri",
+        "detach_point": {"street": "via Aldo Moro", "cross_street": "strada Padana Inferiore", "kind": "angolo"},
+        "via_sequence": [{"street": "corso Matteotti"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-003": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["1C Festiva - Scolastica Istituto Quarini"],
+        "direction_desc": "via Rocchette – Istituto Quarini",
+        "deviation_type": "deviazione",
+        "municipality": "Chieri",
+        "detach_point": {"street": "strada Cambiano", "cross_street": "via Roma", "kind": "angolo"},
+        "via_sequence": [{"street": "via Diaz"}, {"street": "via Cesare Battisti"}, {"street": "piazza Europa"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'via Roma' esiste in quasi tutti i comuni: il vincolo 'Chieri' e' indispensabile (spec §10.7)"]
+      }]
+    },
+    "web-004": {
+      "confidence": "alta",
+      "notes": "Due direzioni, due tipi diversi. Caso chiave: un solo avviso genera due oggetti con deviation_type diverso.",
+      "deviations": [
+        {
+          "lines": ["2"],
+          "direction_desc": "via Corradino",
+          "deviation_type": "limitazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Maroncelli", "cross_street": "via Genova", "kind": "tratto"},
+          "via_sequence": [],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "corso Maroncelli", "stop_code": "1182"},
+          "ambiguities": ["'prima di via Genova' indica un punto lungo la via, non un incrocio esatto"]
+        },
+        {
+          "lines": ["2"],
+          "direction_desc": "via Ponchielli",
+          "deviation_type": "deviazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Maroncelli", "cross_street": null, "kind": "capolinea"},
+          "via_sequence": [{"street": "via Ventimiglia"}, {"street": "via Corradino"}, {"street": "via Genova"}, {"street": "corso Maroncelli"}],
+          "rejoin_point": {"street": null, "phrase": "percorso normale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": []
+        }
+      ]
+    },
+    "web-005": {
+      "confidence": "media",
+      "deviations": [{
+        "lines": ["2", "22"],
+        "direction_desc": "via Corradino -/corso Sebastopoli",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "corso Lecce", "cross_street": "Rosolino Pio", "kind": "angolo"},
+        "via_sequence": [{"street": "corso Lecce"}, {"street": "piazza Rivoli"}],
+        "rejoin_point": {"street": null, "phrase": "percorsi normali"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'Rosolino Pio' e' senza qualificatore ed e' probabilmente un refuso per 'via Rosolino Pilo': il geocoder deve fallire in modo esplicito, non ripiegare su un match approssimato"]
+      }]
+    },
+    "web-007": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["2C"],
+        "direction_desc": "Pessione",
+        "deviation_type": "deviazione",
+        "municipality": "Chieri",
+        "detach_point": {"street": "corso Matteotti", "cross_street": "via Riva", "kind": "angolo"},
+        "via_sequence": [{"street": "via Aldo Moro"}, {"street": "via Montù"}, {"street": "via Fani"}, {"street": "via Conte Rossi di Montelera"}, {"street": "piazza Europa"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-008": {
+      "confidence": "media",
+      "notes": "Sostituzione modale E limitazione insieme. Lo schema di §5.2.1 ha un solo deviation_type per oggetto: qui servono due oggetti sullo stesso testo. Vedi §11 delle note finali.",
+      "deviations": [
+        {
+          "lines": ["3"],
+          "direction_desc": "entrambe",
+          "deviation_type": "sostituzione_modale",
+          "municipality": "Torino",
+          "detach_point": null,
+          "via_sequence": [],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": []
+        },
+        {
+          "lines": ["3"],
+          "direction_desc": "entrambe",
+          "deviation_type": "limitazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Gabetti", "cross_street": "corso Quintino Sella", "kind": "angolo"},
+          "via_sequence": [],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "corso Gabetti", "stop_code": "3232"},
+          "ambiguities": ["il percorso e' dato come estremi ('piazzale Vallette - corso Gabetti'), non come sequenza di vie"]
+        }
+      ]
+    },
+    "web-009": {
+      "confidence": "bassa",
+      "notes": "RIVEDERE PER PRIMO. Il testo descrive tre cose: tram limitati, navette bus sostitutive, e il percorso completo della navetta. La navetta non e' una deviazione della linea 4: e' un servizio nuovo con percorso proprio. Lo schema di §5.2.1 non sa esprimerlo.",
+      "deviations": [
+        {
+          "lines": ["4"],
+          "direction_desc": "entrambe",
+          "deviation_type": "limitazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Giulio Cesare", "cross_street": "piazza Derna", "kind": "angolo"},
+          "via_sequence": [],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "corso Giulio Cesare", "stop_code": null},
+          "ambiguities": [
+            "il tratto non servito e' dato per estremi: via delle Querce (Falchera) - largo Donatori di Sangue",
+            "la navetta bus sostitutiva ha un percorso proprio di 20+ vie con andata e ritorno nello stesso campo: non e' modellabile come deviation",
+            "compaiono due codici fermata (1375, 225) che sono capolinea della navetta, non fermate sospese"
+          ]
+        }
+      ]
+    },
+    "web-010": {
+      "confidence": "alta",
+      "notes": "'via Frejus' compare due volte nella sequenza: il percorso torna sulla stessa via. La validazione di §5.2.3 ('passa entro 100 m da ogni via') regge, ma un dedup ingenuo della via_sequence romperebbe l'ordine.",
+      "deviations": [{
+        "lines": ["5"],
+        "direction_desc": "piazza Dalla Chiesa (Orbassano)",
+        "deviation_type": "deviazione",
+        "municipality": "Orbassano",
+        "detach_point": {"street": "via dei Mulini", "cross_street": "via Montegrappa", "kind": "angolo"},
+        "via_sequence": [{"street": "strada Rivalta"}, {"street": "via Circonvallazione Esterna"}, {"street": "via Frejus"}, {"street": "via Gramsci"}, {"street": "strada Piossasco"}, {"street": "via Frejus"}, {"street": "via Ascianghi"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-011": {
+      "confidence": "alta",
+      "notes": "Cinque linee in un avviso, con quattro convenzioni di naming diverse ('68+', 'STAR 1', 'E68 VERDE'). Test principale per la tabella alias di §4.1. Introduce anche 'ponte' come qualificatore di toponimo, che §5.2.2 non elenca.",
+      "deviations": [{
+        "lines": ["6", "68+", "STAR 1", "E68 VERDE", "E68B VERDE"],
+        "direction_desc": "corso Gabetti – Campus Einaudi – corso Farini – Gassino - Chieri",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "via Rossini", "cross_street": "lungo Dora Siena", "kind": "angolo"},
+        "via_sequence": [{"street": "ponte Rossini"}, {"street": "lungo Dora Firenze"}, {"street": "ponte Emanuele I"}, {"street": "corso Tortona"}],
+        "rejoin_point": {"street": null, "phrase": "percorsi normali"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'ponte Rossini' e 'ponte Emanuele I': qualificatore 'ponte' assente dalla lista di normalizzazione di §5.2.2"]
+      }]
+    },
+    "web-012": {
+      "confidence": "alta",
+      "notes": "Contiene 'via dell'Arsenale' con apostrofo tipografico U+2019: e' il caso della trappola §10.12.",
+      "deviations": [{
+        "lines": ["7"],
+        "direction_desc": "circolare",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "piazza Castello", "cross_street": null, "kind": "capolinea"},
+        "via_sequence": [{"street": "via Pietro Micca"}, {"street": "via San Tommaso"}, {"street": "via dell’Arsenale"}, {"street": "corso Vittorio Emanuele II"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-014": {
+      "confidence": "alta",
+      "notes": "NEGATIVO IMPORTANTE. Il testo e' 'Gestione per autobus.' e basta. Il parser deve produrre zero geometria. Se inventa un percorso, ha fallito il criterio §11.4.",
+      "deviations": [{
+        "lines": ["9"],
+        "direction_desc": "entrambe",
+        "deviation_type": "sostituzione_modale",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-015": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["10"],
+        "direction_desc": "entrambe",
+        "deviation_type": "sostituzione_modale",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["la variante festiva ha estremi diversi (piazzale Caio Mario invece di corso Settembrini): e' una condizione di calendario, non una deviazione"]
+      }]
+    },
+    "web-016": {
+      "confidence": "media",
+      "notes": "Limitazione + inversione + capolinea provvisorio, su due direzioni, fuori Torino.",
+      "deviations": [
+        {
+          "lines": ["11"],
+          "direction_desc": "via Leopardi (Venaria)",
+          "deviation_type": "limitazione",
+          "municipality": "Venaria Reale",
+          "detach_point": {"street": "via Di Vittorio", "cross_street": "via San Marchese", "kind": "angolo"},
+          "via_sequence": [{"street": "via Di Vittorio"}],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "via Di Vittorio", "stop_code": "2301"},
+          "ambiguities": ["l'inversione alla rotonda e' parte della limitazione, non un evento separato", "il testo dice 'Nel Comune di Venaria', il nome amministrativo e' 'Venaria Reale'"]
+        },
+        {
+          "lines": ["11"],
+          "direction_desc": "corso Stati Uniti",
+          "deviation_type": "limitazione",
+          "municipality": "Venaria Reale",
+          "detach_point": {"street": "via Di Vittorio", "cross_street": null, "kind": "capolinea"},
+          "via_sequence": [],
+          "rejoin_point": {"street": null, "phrase": "percorso normale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "via Di Vittorio", "stop_code": "2301"},
+          "ambiguities": []
+        }
+      ]
+    },
+    "web-017": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["13"],
+        "direction_desc": "entrambe",
+        "deviation_type": "sostituzione_modale",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-019": {
+      "confidence": "media",
+      "notes": "Due linee, due direzioni, capolinea provvisorio descritto per area ('lato est tra via Alfieri e via Lascaris') e non per codice fermata.",
+      "deviations": [
+        {
+          "lines": ["14", "63"],
+          "direction_desc": "piazza Solferino",
+          "deviation_type": "limitazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "piazza Solferino", "cross_street": "corso Re Umberto", "kind": "tratto"},
+          "via_sequence": [],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "piazza Solferino", "stop_code": null},
+          "ambiguities": ["il capolinea e' un'area ('lato est compresa tra via Alfieri e via Lascaris'), non un punto: non geocodificabile a un indirizzo"]
+        },
+        {
+          "lines": ["14", "63"],
+          "direction_desc": "via Amendola (Nichelino) – via Negarville",
+          "deviation_type": "inversione",
+          "municipality": "Torino",
+          "detach_point": {"street": "piazza Solferino", "cross_street": null, "kind": "capolinea"},
+          "via_sequence": [{"street": "piazza Solferino"}, {"street": "corso Re Umberto"}],
+          "rejoin_point": {"street": null, "phrase": "percorsi normali"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": ["'dopo la fontana Angelica' e' un punto di riferimento monumentale, non un toponimo stradale"]
+        }
+      ]
+    },
+    "web-024": {
+      "confidence": "alta",
+      "deviations": [
+        {
+          "lines": ["19"],
+          "direction_desc": "corso Bolzano",
+          "deviation_type": "limitazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "via Cernaia", "cross_street": "corso Vinzaglio", "kind": "angolo"},
+          "via_sequence": [{"street": "via Cernaia"}, {"street": "piazza XVIII Dicembre"}, {"street": "corso Bolzano"}],
+          "rejoin_point": null,
+          "suspended_stop_codes": [],
+          "temporary_terminus": {"street": "corso Bolzano", "stop_code": "3581"},
+          "ambiguities": ["'piazza XVIII Dicembre': numero romano, vedi normalizzazione §5.2.2"]
+        },
+        {
+          "lines": ["19"],
+          "direction_desc": "corso Cadore",
+          "deviation_type": "deviazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Bolzano", "cross_street": null, "kind": "capolinea"},
+          "via_sequence": [{"street": "corso Matteotti"}, {"street": "corso Vinzaglio"}, {"street": "via Cernaia"}],
+          "rejoin_point": {"street": null, "phrase": "percorso normale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": []
+        }
+      ]
+    },
+    "web-027": {
+      "confidence": "alta",
+      "notes": "Raro e prezioso: dichiara esplicitamente un luogo NON servito ('non transita da piazza Vittorio Veneto'). Il narratore di §6.3 puo' usarlo alla lettera.",
+      "deviations": [{
+        "lines": ["30"],
+        "direction_desc": "corso San Maurizio",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "via Vanchiglia", "cross_street": null, "kind": "tratto"},
+        "via_sequence": [{"street": "corso San Maurizio"}],
+        "rejoin_point": null,
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'effettua il normale capolinea' significa che il capolinea NON cambia: non e' una limitazione", "'non transita da piazza Vittorio Veneto' e' una soppressione dichiarata a parole, senza codici fermata"]
+      }]
+    },
+    "web-028": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["30"],
+        "direction_desc": "Pessione",
+        "deviation_type": "deviazione",
+        "municipality": "Chieri",
+        "detach_point": {"street": "Porta Gialdo", "cross_street": null, "kind": "rotatoria"},
+        "via_sequence": [{"street": "via Conte Rossi di Montelera"}, {"street": "via Lombroso"}, {"street": "via Monti"}, {"street": "via Vittone"}, {"street": "via Vittone"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["contiene un'inversione di marcia interna ('alla rotatoria di via Vittone / strada Campo Archero / piazza Europa') pur essendo nel complesso una deviazione: il tipo dominante e' 'deviazione'", "il comune non e' dichiarato nel testo: dedotto da Porta Gialdo (Chieri) — VERIFICARE"]
+      }]
+    },
+    "web-029": {
+      "confidence": "alta",
+      "notes": "Il testo scrive 'deviata via Aldo Moro', senza la preposizione 'in'. Robustezza del parser.",
+      "deviations": [{
+        "lines": ["30"],
+        "direction_desc": "corso San Maurizio (Torino)",
+        "deviation_type": "deviazione",
+        "municipality": "Chieri",
+        "detach_point": {"street": "strada Padana Inferiore", "cross_street": "corso Matteotti", "kind": "angolo"},
+        "via_sequence": [{"street": "via Aldo Moro"}, {"street": "via Fani"}, {"street": "via Conte Rossi di Montelera"}, {"street": "via Vittorio Emanuele II"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["la direzione dichiara 'Torino' ma il comune della deviazione e' Chieri: il vincolo di geocoding va preso da 'Nel Comune di', non dalla direzione"]
+      }]
+    },
+    "web-031": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["42"],
+        "direction_desc": "via Marsigli",
+        "deviation_type": "limitazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "corso Peschiera", "cross_street": null, "kind": "tratto"},
+        "via_sequence": [{"street": "corso Monte Cucco"}, {"street": "via Monte Ortigara"}],
+        "rejoin_point": null,
+        "suspended_stop_codes": [],
+        "temporary_terminus": {"street": "via Monte Ortigara", "stop_code": null},
+        "ambiguities": ["deviazione e limitazione insieme: il mezzo devia E termina prima. Ho scelto 'limitazione' perche' e' l'effetto che conta per l'utente"]
+      }]
+    },
+    "web-033": {
+      "confidence": "alta",
+      "notes": "Le due direzioni chiudono con formule diverse: 'percorso normale' e 'percorso attuale'. La seconda implica che c'e' gia' un'altra deviazione attiva sulla stessa linea (spec §10.14).",
+      "deviations": [
+        {
+          "lines": ["55"],
+          "direction_desc": "via Moncalieri (Grugliasco)",
+          "deviation_type": "deviazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Vittorio Emanuele II", "cross_street": null, "kind": "tratto"},
+          "via_sequence": [{"street": "piazza Adriano"}, {"street": "via Di Nanni"}, {"street": "piazza Sabotino"}, {"street": "corso Peschiera"}, {"street": "corso Racconigi"}],
+          "rejoin_point": {"street": null, "phrase": "percorso normale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": []
+        },
+        {
+          "lines": ["55"],
+          "direction_desc": "via Farini",
+          "deviation_type": "deviazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "corso Racconigi", "cross_street": null, "kind": "tratto"},
+          "via_sequence": [{"street": "corso Peschiera"}, {"street": "piazza Sabotino"}, {"street": "via Di Nanni"}, {"street": "piazza Adriano"}, {"street": "corso Vittorio Emanuele II"}],
+          "rejoin_point": {"street": null, "phrase": "percorso attuale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": ["'percorso attuale' != 'percorso normale': il rientro avviene su un percorso gia' deviato"]
+        }
+      ]
+    },
+    "web-035": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["65"],
+        "direction_desc": "corso Bolzano",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "via Asinari di Bernezzo", "cross_street": "corso Monte Grappa", "kind": "angolo"},
+        "via_sequence": [{"street": "via Asinari di Bernezzo"}, {"street": "piazza Chironi"}, {"street": "via Medici"}, {"street": "corso Lecce"}, {"street": "via Lessona"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-036": {
+      "confidence": "alta",
+      "deviations": [
+        {
+          "lines": ["68"],
+          "direction_desc": "via Frejus",
+          "deviation_type": "deviazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "piazza Adriano", "cross_street": "via Frejus", "kind": "angolo"},
+          "via_sequence": [{"street": "piazza Adriano"}, {"street": "via Di Nanni"}, {"street": "piazza Sabotino"}, {"street": "corso Peschiera"}],
+          "rejoin_point": {"street": null, "phrase": "percorso normale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": []
+        },
+        {
+          "lines": ["68"],
+          "direction_desc": "via Cafasso",
+          "deviation_type": "deviazione",
+          "municipality": "Torino",
+          "detach_point": {"street": "via Frejus", "cross_street": null, "kind": "tratto"},
+          "via_sequence": [{"street": "corso Trapani"}, {"street": "corso Peschiera"}, {"street": "piazza Sabotino"}, {"street": "via Di Nanni"}, {"street": "piazza Adriano"}],
+          "rejoin_point": {"street": null, "phrase": "percorso normale"},
+          "suspended_stop_codes": [],
+          "temporary_terminus": null,
+          "ambiguities": []
+        }
+      ]
+    },
+    "web-038": {
+      "confidence": "media",
+      "notes": "Il testo e' DIFETTOSO all'origine: 'Dalle ore alle ore 18.00', manca l'ora di inizio. Caso reale di input malformato: il parser deve reggerlo senza inventare l'orario.",
+      "deviations": [{
+        "lines": ["82"],
+        "direction_desc": "corso Trieste (Moncalieri)",
+        "deviation_type": "inversione",
+        "municipality": "Moncalieri",
+        "detach_point": {"street": "strada Tetti Piatti", "cross_street": "strada Tagliaferro", "kind": "rotatoria"},
+        "via_sequence": [{"street": "strada Tetti Piatti"}, {"street": "strada Carignano"}, {"street": "viale Europa"}, {"street": "via Vinovo"}],
+        "rejoin_point": {"street": "strada Tagliaferro", "phrase": "riprende il percorso regolare"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["la rotatoria e' definita da tre vie (strada Tetti Piatti / strada Tagliaferro / via Pertini): ho messo la prima come cross_street", "ora di inizio mancante nel testo originale"]
+      }]
+    },
+    "web-040": {
+      "confidence": "media",
+      "notes": "Unico caso del campione con un rejoin espresso come 'dopo <via>' invece che con una formula fissa. E 'carreggiata laterale Est' non e' un toponimo geocodificabile.",
+      "deviations": [{
+        "lines": ["92"],
+        "direction_desc": "piazza del Donatore di Sangue",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "corso Giulio Cesare", "cross_street": "via Spontini", "kind": "angolo"},
+        "via_sequence": [{"street": "corso Giulio Cesare"}, {"street": "via Sempione"}],
+        "rejoin_point": {"street": "via Monte Rosa", "phrase": "segue il percorso normale dopo via Monte Rosa"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'carreggiata laterale Est di corso Giulio Cesare': sotto-carreggiata, non una via a se'. In OSM e' una way separata con lo stesso name: il geocoding vincolato deve sceglierla per prossimita', non per nome"]
+      }]
+    },
+    "web-041": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["94"],
+        "direction_desc": "piazza Statuto",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "via Monginevro", "cross_street": null, "kind": "tratto"},
+        "via_sequence": [{"street": "corso Ferrucci"}, {"street": "piazza Bernini"}, {"street": "via Duchessa Jolanda"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-043": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["OB1"],
+        "direction_desc": "Ospedale San Luigi",
+        "deviation_type": "deviazione",
+        "municipality": "Orbassano",
+        "detach_point": {"street": "via Volturno", "cross_street": null, "kind": "tratto"},
+        "via_sequence": [{"street": "strada Rivalta"}, {"street": "via Circonvallazione Esterna"}, {"street": "via Frejus"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["il comune non e' dichiarato: dedotto dalla linea (OB1 = Orbassano) — VERIFICARE"]
+      }]
+    },
+    "web-045": {
+      "confidence": "alta",
+      "notes": "Rejoin esplicito su una via nominata: 'dopo via Leini'. E' il caso che il validatore di §5.2.3 puo' controllare davvero.",
+      "deviations": [{
+        "lines": ["SE2"],
+        "direction_desc": "parcheggio Stura (Torino)",
+        "deviation_type": "deviazione",
+        "municipality": "Settimo Torinese",
+        "detach_point": {"street": "corso Piemonte", "cross_street": "via Fantina", "kind": "angolo"},
+        "via_sequence": [{"street": "corso Piemonte"}],
+        "rejoin_point": {"street": "via Leinì", "phrase": "riprende il percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "web-047": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["STAR 1"],
+        "direction_desc": "via Bixio",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "via Accademia Albertina", "cross_street": "via dei Mille", "kind": "angolo"},
+        "via_sequence": [{"street": "via Accademia Albertina"}, {"street": "corso Vittorio Emanuele II"}],
+        "rejoin_point": {"street": "corso Re Umberto", "phrase": "riprende il percorso normale dopo corso Re Umberto"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'STAR 1' va risolto in ST1U tramite la tabella alias di §4.1"]
+      }]
+    },
+    "web-049": {
+      "confidence": "alta",
+      "deviations": [{
+        "lines": ["STAR 2"],
+        "direction_desc": "corso Massimo d’Azeglio",
+        "deviation_type": "deviazione",
+        "municipality": "Torino",
+        "detach_point": {"street": "via Santa Teresa", "cross_street": null, "kind": "tratto"},
+        "via_sequence": [{"street": "via XX Settembre"}, {"street": "via Pietro Micca"}, {"street": "piazza Castello"}, {"street": "via Po"}],
+        "rejoin_point": {"street": null, "phrase": "percorso normale"},
+        "suspended_stop_codes": [],
+        "temporary_terminus": null,
+        "ambiguities": ["'corso Massimo d’Azeglio' nel campo direzione usa l'apostrofo tipografico U+2019 (trappola §10.12)", "'via XX Settembre': numero romano"]
+      }]
+    },
+    "alert-008": {
+      "confidence": "alta",
+      "notes": "Categoria sospensione_fermate. Nota importante: il codice fermata sta nel TESTO, non in informed_entity. Gli stop_id strutturati sono tutte le fermate della linea (vedi FASE-0-RISULTATI §5).",
+      "deviations": [{
+        "lines": ["15U", "33U", "42U"],
+        "direction_desc": null,
+        "deviation_type": "sospensione_fermate",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": ["3447"],
+        "temporary_terminus": null,
+        "ambiguities": ["le linee arrivano da informed_entity.route_id, gia' canoniche: nessun alias da risolvere"]
+      }]
+    },
+    "alert-032": {
+      "confidence": "media",
+      "notes": "Viene istituita una fermata PROVVISORIA in sostituzione. Lo schema di §5.2.1 non ha un campo per esprimerlo: e' informazione utile all'utente che andrebbe persa.",
+      "deviations": [{
+        "lines": ["55U", "68U", "9U"],
+        "direction_desc": null,
+        "deviation_type": "sospensione_fermate",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": ["558"],
+        "temporary_terminus": null,
+        "ambiguities": ["fermata provvisoria in 'carreggiata laterale Nord di corso Vittorio Emanuele II, dopo corso Inghilterra': non rappresentabile nello schema attuale", "'dalle ore 08:30' senza data: e' l'avviso di un evento in corso"]
+      }]
+    },
+    "alert-066": {
+      "confidence": "alta",
+      "notes": "Stessa fermata 'Sabotino' di alert-008 ma codice diverso (3445 vs 3447): sono le due banchine opposte. Il numero e' scritto 'n°' invece di 'n.': la regex sui codici deve reggere entrambe.",
+      "deviations": [{
+        "lines": ["15U", "33U", "42U"],
+        "direction_desc": null,
+        "deviation_type": "sospensione_fermate",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": ["3445"],
+        "temporary_terminus": null,
+        "ambiguities": []
+      }]
+    },
+    "alert-085": {
+      "confidence": "alta",
+      "notes": "CASO TRAPPOLA, da tenere. Due insidie in un testo solo: (1) informed_entity e' vuoto, quindi la linea va dedotta e la tabella alias di §4.1 torna necessaria; (2) il testo cita 'via Rossini angolo lungo Dora Siena' come CAUSA dei lavori, non come percorso. Un parser distratto le estrae come via_sequence e inventa una deviazione che non esiste — cioe' un falso positivo, il fallimento piu' grave secondo §11.4.",
+      "deviations": [{
+        "lines": [],
+        "direction_desc": null,
+        "deviation_type": "sospensione_fermate",
+        "municipality": "Torino",
+        "detach_point": null,
+        "via_sequence": [],
+        "rejoin_point": null,
+        "suspended_stop_codes": ["3244"],
+        "temporary_terminus": null,
+        "ambiguities": ["nessun route_id in informed_entity: linea non determinabile dal solo alert", "'via Rossini angolo lungo Dora Siena' e' la causa, NON il percorso deviato"]
+      }]
+    }
+  }
+}

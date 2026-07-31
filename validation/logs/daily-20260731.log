@@ -1,0 +1,34 @@
+===== 2026-07-31 15:16:45 =====
+
+[1;96m########################################################################[0m
+[1;96m#  SNAPSHOT GTFS STATICO — test del Segnale A[0m
+[1;96m#  2026-07-31 15:16:45[0m
+[1;96m########################################################################[0m
+[90m  Riuso lo zip gia' presente: data/gtt_gtfs-20260731.zip (24,707,915 B)[0m
+
+[1;96m========================================================================[0m
+[1;96m  SNAPSHOT GTFS STATICO[0m
+[1;96m========================================================================[0m
+  feed_version : 20260731   validita' 20260730 -> 20270131
+  routes.txt   : 223 linee
+  trips.txt    : 76,949 corse   1,486 shape considerate
+  shapes.txt   : 211,343 punti
+[90m  stop_times.txt: lettura in streaming (file grosso, ~1 min)...[0m
+[92m  OK   sequenze fermate per 1,486 shape[0m
+[92m
+  Snapshot costruito: 1,486 shape[0m
+[92m  Salvato: validation/gtfs_snapshots/gtfs-20260731-151653.json  (718,071 B)[0m
+
+[1;96m========================================================================[0m
+[1;96m  CONFRONTO SNAPSHOT  <<< TEST DEL SEGNALE A >>>[0m
+[1;96m========================================================================[0m
+  precedente : 2026-07-31T13:09:02.661381+00:00  feed_version 20260731
+  attuale    : 2026-07-31T13:16:45.388541+00:00  feed_version 20260731
+[93m  ~~   stesso feed_version: GTT non ha ripubblicato il GTFS.[0m
+
+
+[1;96m  >>> VERDETTO SEGNALE A[0m
+[93m  ~~   Nessun cambiamento in questo intervallo.[0m
+[90m       Non conclusivo dopo un solo giorno. Servono 3-7 giorni.[0m
+
+exit=0

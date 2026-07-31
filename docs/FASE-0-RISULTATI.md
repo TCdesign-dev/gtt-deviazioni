@@ -150,6 +150,12 @@ Quindi la speranza di §1.3 ("ottieni gratis il collegamento avviso → linea �
 impattate") **è per metà infondata**: il collegamento alla linea sì, alle fermate no.
 Le fermate saltate vanno derivate dalla geometria, come da §6.1. Nessuna scorciatoia.
 
+**Precisazione emersa annotando le fixture (§8 qui sotto).** Le fermate sospese *sono*
+dichiarate, ma **nel testo di alert dedicati**, non nel campo strutturato. Nel corpus ci
+sono 14 avvisi del tipo `Fermata 3447 "Sabotino" sospesa`, con il codice esplicito.
+Vale quindi la regola di §6.1 ("quel dato VINCE sulla geometria"), ma il codice va estratto
+con una regex sul testo — attenzione alle varianti `n.`, `n°`, `Fermata 3447`, `Fermata n. 15080`.
+
 Nota: il campo `description_text` degli alert contiene **lo stesso testo** della tabella
 `/cms/variazioni`, in forma già strutturata e senza HTML da parsare. Per il Segnale B
 conviene ingerire **prima** gli alert e usare lo scraping web come complemento.
@@ -220,6 +226,51 @@ facile da rilevare. Da confermare col diff dei prossimi giorni.
 
 ---
 
+## 9-bis. Fixture per la Fase 2 — e cosa hanno rivelato
+
+Raccolte in parallelo, perché servono comunque qualunque sia l'esito del Segnale A.
+
+- **Corpus**: `tests/fixtures/notices.json` — **198 avvisi reali** (50 dal web, 180 alert,
+  32 riconosciuti come lo stesso avviso in entrambe le fonti). Le due fonti sono
+  **complementari**: solo ~1 riga su 12 ha un alert molto simile, quindi vanno unite.
+  Rigenerabile con `scripts/build_fixtures.py`.
+- **Annotazioni**: `tests/fixtures/annotations.json` — **34 avvisi, 41 oggetti `deviation`**,
+  campione stratificato su tutte e cinque le categorie (`deviazione` 23, `limitazione` 8,
+  `sostituzione_modale` 4, `sospensione_fermate` 4, `inversione` 2). Supera il minimo di 30
+  richiesto da §12.7. File separato dal corpus, così rigenerare il corpus non le distrugge.
+- **Verifica**: `scripts/check_annotations.py` controlla schema e, soprattutto, che
+  **ogni toponimo annotato compaia davvero nel testo originale**. Passa: nessuna via inventata.
+
+> ⚠️ **Le annotazioni le ho prodotte io, non un umano.** Usarle per valutare un parser LLM
+> misura meno di quanto sembri: gli errori sistematici condivisi restano invisibili.
+> Vanno riviste a mano — a partire da `web-009`, l'unica con `confidence: bassa`.
+
+### Tre limiti dello schema di §5.2.1, emersi annotando
+
+1. **Un avviso può avere due tipi insieme.** `web-008` (linea 3) è *sostituzione modale*
+   **e** *limitazione*; `web-031` (linea 42) è *deviazione* **e** *limitazione*.
+   Lo schema ha un solo `deviation_type` per oggetto: servono più oggetti sullo stesso testo,
+   e il narratore di §6.3 deve saperli comporre.
+2. **Le navette sostitutive non sono deviazioni.** `web-009` (linea 4) descrive un servizio
+   bus *nuovo*, con un percorso proprio di oltre venti vie e andata/ritorno nello stesso
+   campo. Non è modellabile come variante della linea: è un'altra linea.
+3. **Le fermate provvisorie non hanno un campo.** `alert-032` istituisce una fermata
+   sostitutiva in "carreggiata laterale Nord di corso Vittorio Emanuele II": informazione
+   direttamente utile all'utente, che oggi si perderebbe.
+
+Aggiungerei anche: `ponte` manca dalla lista di qualificatori da normalizzare in §5.2.2
+(`ponte Rossini`, `ponte Emanuele I` in `web-011`), e "carreggiata laterale Est/Nord"
+(`web-040`, `alert-032`) non è un toponimo geocodificabile per nome — in OSM è una way
+distinta con lo stesso `name`, quindi va scelta per prossimità al percorso.
+
+**Il caso da non perdere è `alert-085`**: `informed_entity` vuoto (quindi la linea va dedotta,
+e la tabella alias di §4.1 torna necessaria) e il testo cita "via Rossini angolo lungo Dora
+Siena" come **causa dei lavori, non come percorso**. Un parser distratto le estrae come
+`via_sequence` e inventa una deviazione inesistente: esattamente il falso positivo che §11.4
+indica come il fallimento più grave.
+
+---
+
 ## 10. Cosa fare adesso
 
 1. **Rieseguire il diff ogni giorno per almeno 3 giorni.** È l'unico modo di chiudere la
@@ -229,9 +280,13 @@ facile da rilevare. Da confermare col diff dei prossimi giorni.
    cd ~/Projects/gtt-deviazioni && .venv/bin/python scripts/snapshot_gtfs.py --out ./validation --compare
    ```
 
-2. **In parallelo, e senza dipendere dal punto 1**, si può già iniziare a raccogliere le
-   fixture: 51 righe da `/cms/variazioni` più 139 alert testuali sono già disponibili oggi,
-   e servono comunque per la Fase 2 qualunque sia l'esito del Segnale A.
+   Il job è già installato: LaunchAgent `com.tommaso.gtt-deviazioni.snapshot`, ogni giorno
+   alle 05:00 (il GTFS viene rigenerato alle 04:00). Log in `validation/logs/`.
+   Testato end-to-end il 31/07 con `launchctl kickstart`: `exit 0`, e su input identico
+   rileva zero cambiamenti — gli hash sono deterministici, niente falsi positivi.
+
+2. ~~Raccogliere le fixture~~ — **fatto** (§9-bis). Restano da **rivedere a mano** le 34
+   annotazioni, partendo da `web-009`.
 
 3. Quando il Segnale A avrà una risposta, rivedere le priorità della roadmap di §8 —
    la Fase 1 va riscritta sul GTFS statico anziché sul client OTP.

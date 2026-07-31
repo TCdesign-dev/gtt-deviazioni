@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/deviation_service.dart';
 import '../core/pipeline/stop_impact.dart';
 import 'line_map.dart';
+import 'live_watch_card.dart';
 
 /// Il dettaglio di una linea: cosa succede, dove, e cosa fare.
 ///
@@ -39,6 +40,7 @@ class LineScreen extends StatelessWidget {
           // La mappa sta in cima e c'e' SEMPRE: vedere dove passa la linea
           // serve anche quando la deviazione non si e' potuta ricostruire.
           LineMap(status: status),
+          LiveWatchCard(status: status),
           if (status.reports.isEmpty)
             const Padding(
               padding: EdgeInsets.all(32),

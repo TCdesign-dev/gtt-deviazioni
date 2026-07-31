@@ -68,6 +68,8 @@ smentiscono.
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
 | `pipeline/stop_impact.dart` | fatto, 11 test + catena dal vivo |
+| `sources/vehicles_source.dart` | fatto |
+| `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
 | `data/` | fatto — impostazioni e orchestrazione |
 | `ui/` | fatto — 3 schermate + mappa, 11 test |
 | `core/deviation_service.dart` | fatto — la facciata |
@@ -102,10 +104,6 @@ verifica che la lunghezza resti identica al metro.
 Per non confondersi leggendo `config.dart`, che contiene piu' costanti di
 quante ne siano usate:
 
-- **non osserva le posizioni dei mezzi.** Il Segnale C della specifica e'
-  stato misurato (`scripts/burst_probe.py`) ma non e' implementato
-  nell'app: `burstPollInterval`, `burstMinVehicles` e `offRouteMeters`
-  sono costanti tarate e non ancora usate da nessuno.
 - **non manda notifiche.** Servirebbe qualcosa fuori dal telefono che
   sorvegli gli avvisi: iOS non regge il polling in background.
 - **non calcola le distanze a piedi reali.** Le alternative alle fermate

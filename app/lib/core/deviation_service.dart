@@ -56,10 +56,18 @@ class LineStatus {
     required this.shape,
     required this.reports,
     required this.checkedAt,
+    this.allShapes = const [],
   });
 
   final TransitLine line;
+
+  /// La variante principale, quella con piu' corse.
   final RouteShape shape;
+
+  /// TUTTE le varianti della linea. Servono all'osservazione dei mezzi:
+  /// un mezzo sulla corsa limitata non sta deviando, e confrontarlo solo
+  /// con la principale lo farebbe sembrare fuori rotta.
+  final List<RouteShape> allShapes;
   final List<DeviationReport> reports;
   final DateTime checkedAt;
 
@@ -170,6 +178,7 @@ class DeviationService {
     return LineStatus(
       line: line,
       shape: shape,
+      allShapes: index.shapesOf(line.routeId),
       reports: reports,
       checkedAt: DateTime.now(),
     );

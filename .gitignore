@@ -2,3 +2,4 @@ data/*.zip
 data/gtfs/
 .venv/
 __pycache__/
+validation/logs/

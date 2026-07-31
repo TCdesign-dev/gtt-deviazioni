@@ -34,7 +34,16 @@ class Geometry {
 
   /// Come [pointToPolyline], ma dice anche DOVE: utile per capire se due
   /// punti sono nello stesso tratto e in che ordine li incontra la linea.
-  static Projected projectOnPolyline(Point p, List<Point> line) {
+  ///
+  /// Con [fromAlong] si cerca solo **a valle** di quel punto del percorso.
+  /// Serve quando una linea passa due volte vicino allo stesso posto: il
+  /// rientro da una deviazione sta dopo il punto di stacco, non prima, e
+  /// senza il vincolo si sceglierebbe il passaggio sbagliato.
+  static Projected projectOnPolyline(
+    Point p,
+    List<Point> line, {
+    double fromAlong = 0,
+  }) {
     if (line.isEmpty) {
       return const Projected(double.infinity, -1, 0, 0);
     }
@@ -55,16 +64,38 @@ class Geometry {
         t = (((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy))
             .clamp(0.0, 1.0);
       }
+      final candidateAlong = along + segLen * t;
       final d = p.distanceTo(Point(a.x + t * dx, a.y + t * dy));
-      if (d < best) {
+      if (d < best && candidateAlong >= fromAlong) {
         best = d;
         bestIdx = i;
         bestT = t;
-        bestAlong = along + segLen * t;
+        bestAlong = candidateAlong;
       }
       along += segLen;
     }
     return Projected(best, bestIdx, bestT, bestAlong);
+  }
+
+  /// Il punto sulla polilinea a [alongMeters] dall'inizio.
+  /// Serve a materializzare un punto di rientro che sta ESATTAMENTE sul
+  /// percorso ufficiale, non semplicemente vicino.
+  static Point? pointAtAlong(List<Point> line, double alongMeters) {
+    if (line.length < 2) return line.isEmpty ? null : line.first;
+    if (alongMeters <= 0) return line.first;
+    var along = 0.0;
+    for (var i = 0; i < line.length - 1; i++) {
+      final seg = line[i].distanceTo(line[i + 1]);
+      if (along + seg >= alongMeters) {
+        final t = seg == 0 ? 0.0 : (alongMeters - along) / seg;
+        return Point(
+          line[i].x + (line[i + 1].x - line[i].x) * t,
+          line[i].y + (line[i + 1].y - line[i].y) * t,
+        );
+      }
+      along += seg;
+    }
+    return line.last;
   }
 
   /// Lunghezza totale della polilinea in metri.

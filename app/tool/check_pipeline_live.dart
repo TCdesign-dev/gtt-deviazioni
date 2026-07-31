@@ -15,6 +15,7 @@ import 'package:gtt_deviazioni/core/geo/projection.dart';
 import 'package:gtt_deviazioni/core/gtfs/gtfs_parser.dart';
 import 'package:gtt_deviazioni/core/models/transit.dart';
 import 'package:gtt_deviazioni/core/pipeline/geocoder.dart';
+import 'package:gtt_deviazioni/core/pipeline/rejoin_inference.dart';
 import 'package:gtt_deviazioni/core/pipeline/route_builder.dart';
 import 'package:gtt_deviazioni/core/pipeline/stop_impact.dart';
 
@@ -31,7 +32,10 @@ const _cases = <({
 })>[
   (
     line: '65',
-    direction: 0,
+    // L'avviso dice "direzione corso Bolzano", che nel GTFS e' dir 1.
+    // Con dir 0 la deduzione del rientro finisce a 2 km: la guardia lo
+    // rifiuta, ed e' giusto cosi', ma il dato in ingresso era sbagliato.
+    direction: 1,
     municipality: 'Torino',
     text: 'Da via Asinari di Bernezzo angolo corso Monte Grappa prosegue '
         'per via Asinari di Bernezzo, piazza Chironi, via Medici, '
@@ -117,9 +121,17 @@ Future<void> main() async {
       continue;
     }
 
+    // 1-bis. Dove rientra: l'avviso dice solo "percorso normale".
+    final rejoin = RejoinInference.infer(
+      officialRoute: shape,
+      detachPoint: points.first,
+      lastVia: points.last,
+    );
+    stdout.writeln('  $rejoin');
+
     // 2. Routing sulle strade reali, profilo bus.
     final route = await router.build(
-      waypoints: points,
+      waypoints: [...points, if (rejoin.isUsable) rejoin.point!],
       officialRoute: shape,
       // Ogni via nominata deve essere attraversata: e' la prova che il
       // motore non ha preso un'altra strada.

@@ -111,6 +111,59 @@ void main() {
     });
   });
 
+  group('Geometry.projectOnPolyline con vincolo a valle', () {
+    // Un percorso che torna vicino a se stesso: senza vincolo si
+    // sceglierebbe il passaggio sbagliato.
+    final andataERitorno = [
+      const Point(0, 0),
+      const Point(1000, 0),
+      const Point(1000, 100),
+      const Point(0, 100),
+    ];
+
+    test('senza vincolo prende il passaggio piu vicino, che puo essere '
+        'quello di andata', () {
+      final r = Geometry.projectOnPolyline(const Point(200, 10),
+          andataERitorno);
+      expect(r.alongMeters, closeTo(200, 1));
+    });
+
+    test('col vincolo prende il passaggio a valle', () {
+      // Il punto di stacco e' a 1500 m: il rientro deve stare dopo.
+      final r = Geometry.projectOnPolyline(const Point(200, 10),
+          andataERitorno, fromAlong: 1500);
+      expect(r.alongMeters, greaterThan(1500));
+      // Sul ritorno, alla stessa ascissa: 1000 + 100 + (1000-200) = 1900.
+      expect(r.alongMeters, closeTo(1900, 5));
+    });
+
+    test('se a valle non c e piu percorso, non inventa', () {
+      final r = Geometry.projectOnPolyline(const Point(200, 10),
+          andataERitorno, fromAlong: 99999);
+      expect(r.distance, equals(double.infinity));
+    });
+  });
+
+  group('Geometry.pointAtAlong', () {
+    final line = [const Point(0, 0), const Point(100, 0), const Point(100, 50)];
+
+    test('materializza un punto sul percorso', () {
+      expect(Geometry.pointAtAlong(line, 0), equals(const Point(0, 0)));
+      expect(Geometry.pointAtAlong(line, 50), equals(const Point(50, 0)));
+      expect(Geometry.pointAtAlong(line, 120)!.y, closeTo(20, 1e-9));
+    });
+
+    test('oltre la fine restituisce la fine, non null', () {
+      expect(Geometry.pointAtAlong(line, 99999), equals(const Point(100, 50)));
+    });
+
+    test('casi degeneri', () {
+      expect(Geometry.pointAtAlong(const [], 10), isNull);
+      expect(Geometry.pointAtAlong(const [Point(3, 4)], 10),
+          equals(const Point(3, 4)));
+    });
+  });
+
   group('Geometry.length e slice', () {
     final line = [
       const Point(0, 0),

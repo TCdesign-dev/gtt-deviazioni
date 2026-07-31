@@ -5,6 +5,7 @@ import 'models/transit.dart';
 import 'pipeline/extractor.dart';
 import 'pipeline/geocoder.dart';
 import 'pipeline/line_resolver.dart';
+import 'pipeline/rejoin_inference.dart';
 import 'pipeline/route_builder.dart';
 import 'pipeline/stop_impact.dart';
 import 'sources/alerts_source.dart';
@@ -34,6 +35,7 @@ class DeviationReport {
     this.deviatedGeometry,
     this.impact,
     this.whyIncomplete,
+    this.rejoin,
   });
 
   final RawNotice notice;
@@ -55,6 +57,9 @@ class DeviationReport {
   /// Perche' non siamo arrivati fino in fondo. Va mostrato: dire "non ho
   /// saputo ricostruirlo" e' onesto, disegnare un percorso a caso no.
   final String? whyIncomplete;
+
+  /// Dove rientra il mezzo, e se lo ha detto GTT o l'abbiamo dedotto.
+  final RejoinPoint? rejoin;
 
   bool get hasMap => deviatedGeometry != null && deviatedGeometry!.length > 1;
   List<StopImpact> get skippedStops => impact?.skipped ?? const [];
@@ -357,10 +362,41 @@ class DeviationService {
       );
     }
 
+    // 2-bis. Dove rientra.
+    //
+    // MISURATO: 24 avvisi su 28 non nominano la via di rientro, dicono solo
+    // "percorso normale". Senza dedurlo il percorso deviato si ferma
+    // all'ultima via nominata, il tratto di linea interessato resta
+    // troncato, e le fermate fra li' e il rientro vero non vengono valutate.
+    final RejoinPoint rejoin;
+    if (parsed.rejoinStreet != null) {
+      // GTT l'ha detto: il punto e' gia' fra quelli geocodificati.
+      rejoin = RejoinPoint(
+        source: RejoinSource.dichiarato,
+        point: points.last,
+      );
+    } else {
+      rejoin = RejoinInference.infer(
+        officialRoute: shape,
+        detachPoint: points.first,
+        lastVia: points.last,
+      );
+    }
+
+    // Il punto dedotto diventa l'ultimo waypoint: cosi' il percorso
+    // calcolato arriva fino al rientro invece di fermarsi prima.
+    final waypoints = [
+      ...points,
+      if (rejoin.source == RejoinSource.dedotto) rejoin.point!,
+    ];
+
     // 3. Punti -> percorso vero, con le cinque prove.
     final route = await _router.build(
-      waypoints: points,
+      waypoints: waypoints,
       officialRoute: shape,
+      // Le vie da attraversare restano quelle NOMINATE: il rientro dedotto
+      // e' una nostra inferenza, non una promessa di GTT, e pretendere che
+      // il percorso ci passi vicino sarebbe verificare noi stessi.
       requiredVias: points.sublist(1),
     );
     if (route.geometry == null) {
@@ -368,6 +404,7 @@ class DeviationService {
         notice: notice,
         shape: shape,
         parsed: parsed,
+        rejoin: rejoin,
         confidence: Confidence.soloTesto,
         whyIncomplete: 'non sono riuscito a tracciare il percorso deviato',
       );
@@ -387,6 +424,7 @@ class DeviationService {
       notice: notice,
       shape: shape,
       parsed: parsed,
+      rejoin: rejoin,
       deviatedGeometry: route.geometry,
       impact: impact,
       confidence: route.isUsable && unresolved.isEmpty
@@ -397,6 +435,7 @@ class DeviationService {
           : [
               if (unresolved.isNotEmpty)
                 'non ho trovato: ${unresolved.join(", ")}',
+              if (!rejoin.isUsable && rejoin.whyNot != null) rejoin.whyNot!,
               ...route.failures.map((f) => f.message),
             ].join('; '),
     );

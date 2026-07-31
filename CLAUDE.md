@@ -64,6 +64,8 @@ Non sono stime. Se li rimetti in discussione, rimisurali.
 | Copertura alias nomi linea | **98,4%** (63/64) | test Dart |
 | Estrazione LLM (nemotron-3-super:free) | 34/34, **0 toponimi inventati** | `eval_extractor.dart` |
 | Quota gratuita OpenRouter | **50 richieste/giorno** in totale | misurato sul campo |
+| Rientro non nominato negli avvisi | **24 su 28** | fixture annotate |
+| Ultima via nominata: distanza dal percorso | mediana **1 m**, 21/22 ≤ 100 m | misura dedicata |
 
 ## 4. Dove la specifica sbaglia
 
@@ -119,6 +121,10 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
 - **`direction: 0` fisso** faceva calcolare le fermate saltate sempre
   sull'andata, anche per gli avvisi che riguardano il ritorno. GTT scrive
   avvisi *per direzione*.
+- **Il rientro va cercato A VALLE dello stacco.** Una linea puo' passare
+  due volte vicino alla stessa via: senza il vincolo si sceglie il
+  passaggio già fatto. Con la direzione sbagliata la deduzione finisce a
+  2 km — verificato, e la guardia l'ha rifiutata invece di piazzarla lì.
 
 ## 6. Le regole di condotta del sistema
 
@@ -150,8 +156,6 @@ Per non fraintendere:
   pagata su un altro progetto). Servirebbe un cron esterno — GitHub Actions
   è gratis e basta.
 - **distanze a piedi in linea d'aria**, non reali. L'interfaccia lo dichiara.
-- **non deduce il punto di rientro** quando l'avviso dice solo "percorso
-  normale" senza nominare la via.
 - **dentro una direzione usa solo la variante principale.** Una deviazione
   che riguardasse la sola corsa limitata verrebbe calcolata sul percorso
   intero — lo stesso errore corretto un livello più in alto.

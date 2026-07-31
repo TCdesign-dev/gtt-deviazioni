@@ -121,6 +121,23 @@ class GttConfig {
   /// Passo di campionamento per le verifiche geometriche sul percorso.
   static const routeSampleMeters = 25.0;
 
+  // -------------------------------------------------- punto di rientro
+
+  /// Quanto puo' distare dal percorso l'ultima via nominata perche' se ne
+  /// possa dedurre il punto di rientro.
+  ///
+  /// MISURATO sui 22 casi reali con rientro non dichiarato: mediana 1 m,
+  /// 75° percentile 2 m, 21 su 22 entro 100 m. L'unico fuori scala e' la
+  /// linea 7 con "corso Vittorio Emanuele II" a 310 m — via lunghissima,
+  /// dove il geocoder da' un punto solo che cade lontano da dove la linea
+  /// la incontra. La soglia sta apposta sotto quel valore: quel caso NON
+  /// va dedotto, va dichiarato ignoto.
+  static const rejoinMaxViaDistanceMeters = 300.0;
+
+  /// Quanto avanti allo stacco deve stare il rientro. Serve a non far
+  /// coincidere i due punti su percorsi che ripassano vicino a se stessi.
+  static const rejoinMinForwardMeters = 100.0;
+
   // -------------------------------------------------------------- burst
 
   /// Finestra di osservazione GPS on-demand. Adattiva: ci si ferma appena

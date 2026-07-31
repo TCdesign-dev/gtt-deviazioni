@@ -66,7 +66,7 @@ smentiscono.
 | `pipeline/extractor.dart` | da fare |
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
-| `pipeline/stop_impact.dart` | da fare |
+| `pipeline/stop_impact.dart` | fatto, 11 test + catena dal vivo |
 | `ui/` | da fare |
 
 ```bash

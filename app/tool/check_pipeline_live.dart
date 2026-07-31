@@ -13,8 +13,10 @@ import 'dart:io';
 
 import 'package:gtt_deviazioni/core/geo/projection.dart';
 import 'package:gtt_deviazioni/core/gtfs/gtfs_parser.dart';
+import 'package:gtt_deviazioni/core/models/transit.dart';
 import 'package:gtt_deviazioni/core/pipeline/geocoder.dart';
 import 'package:gtt_deviazioni/core/pipeline/route_builder.dart';
+import 'package:gtt_deviazioni/core/pipeline/stop_impact.dart';
 
 /// Deviazioni prese dalla tabella GTT del 31/07/2026, con l'estrazione
 /// gia' fatta a mano (il modulo LLM non c'e' ancora: qui si prova il
@@ -71,8 +73,9 @@ Future<void> main() async {
     exit(1);
   }
 
+  // Con le fermate: servono per l'impatto, ed e' la parte lenta (140 MB).
   final index = await GtfsParser(directory: dir)
-      .build(_cases.map((c) => c.line).toList(), withStops: false);
+      .build(_cases.map((c) => c.line).toList());
   final geocoder = Geocoder();
   final router = RouteBuilder();
 
@@ -127,6 +130,7 @@ Future<void> main() async {
     switch (route.status) {
       case RouteBuildStatus.ok:
         built++;
+        _reportStops(index, shape, route.geometry!);
       case RouteBuildStatus.validationFailed:
         doubtful++;
       case RouteBuildStatus.notRouted:
@@ -139,4 +143,33 @@ Future<void> main() async {
   stdout.writeln('ricostruiti e validati : $built/${_cases.length}');
   stdout.writeln('con riserva            : $doubtful');
   stdout.writeln('non ricostruiti        : $failed');
+}
+
+/// L'output che risponde alla domanda vera: la mia fermata e' servita?
+void _reportStops(
+    GtfsIndex index, RouteShape shape, List<GeoPoint> deviated) {
+  final impact = StopImpactAnalyzer(index: index)
+      .analyze(officialRoute: shape, deviatedRoute: deviated);
+
+  stdout.writeln('  tratto interessato: '
+      '${(impact.affectedFromMeters / 1000).toStringAsFixed(1)}-'
+      '${(impact.affectedToMeters / 1000).toStringAsFixed(1)} km '
+      'del percorso  (${impact.impacts.length} fermate)');
+
+  if (!impact.hasImpact) {
+    stdout.writeln('  nessuna fermata persa: il mezzo devia ma le serve tutte');
+    return;
+  }
+  for (final i in impact.skipped) {
+    stdout.writeln('  NON SERVITA: ${i.stop.name} [${i.stop.code}]');
+    if (i.alternatives.isEmpty) {
+      stdout.writeln('      nessuna alternativa entro 400 m');
+    }
+    for (final a in i.alternatives) {
+      stdout.writeln('      -> $a');
+    }
+  }
+  for (final i in impact.served) {
+    stdout.writeln('  servita    : ${i.stop.name} [${i.stop.code}]');
+  }
 }

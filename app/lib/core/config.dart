@@ -73,6 +73,54 @@ class GttConfig {
   /// Raggio entro cui cercare fermate alternative a una saltata.
   static const alternativeStopMeters = 400.0;
 
+  // ------------------------------------------------- validazione percorso
+
+  /// Le cinque prove di §5.2.3 su un percorso ricostruito. Se una fallisce,
+  /// il percorso NON va mostrato come certo: meglio nessuna mappa che una
+  /// mappa sbagliata, perche' un falso positivo fa perdere il bus.
+
+  /// Quanto puo' distare l'inizio del percorso calcolato dal punto di
+  /// stacco dichiarato nell'avviso.
+  static const routeStartToleranceMeters = 200.0;
+
+  /// Idem per il punto di ricongiungimento.
+  static const routeEndToleranceMeters = 200.0;
+
+  /// Il percorso calcolato deve passare almeno cosi' vicino a OGNI via
+  /// nominata nell'avviso. Se ne salta una, ha preso un'altra strada.
+  static const routeViaToleranceMeters = 100.0;
+
+  /// Rapporto massimo fra la deviazione e il **tratto di percorso normale
+  /// che sostituisce**.
+  ///
+  /// La specifica confrontava con la distanza in linea d'aria fra stacco e
+  /// rientro. MISURATO: non funziona, perche' molte deviazioni sono anelli
+  /// che rientrano vicino al punto di stacco — la 2C fa 4,3 km per 0,8 km
+  /// in linea d'aria e verrebbe bocciata pur essendo corretta. Il
+  /// confronto giusto e' con il pezzo di percorso che la deviazione
+  /// rimpiazza.
+  static const routeMaxDetourRatio = 3.0;
+
+  /// Lunghezza minima del tratto realmente fuori percorso.
+  ///
+  /// Sostituisce la regola "max 20% di sovrapposizione col percorso
+  /// normale" della specifica. MISURATO: non regge, perche' moltissimi
+  /// avvisi dicono "prosegue per la stessa via" e la deviazione condivide
+  /// strada col percorso normale per costruzione — le tre deviazioni reali
+  /// provate condividevano il 36%, 38% e 66%, ed erano tutte corrette.
+  ///
+  /// Quello che conta davvero e' che esista un tratto CONTINUO fuori
+  /// percorso: e' cio' che distingue una deviazione vera da un percorso
+  /// che coincide con quello normale (il falso positivo di §11.4).
+  static const routeMinDetourMeters = 150.0;
+
+  /// Entro questa distanza un punto e' considerato "sul percorso normale",
+  /// per il calcolo della sovrapposizione qui sopra.
+  static const routeOverlapMeters = 30.0;
+
+  /// Passo di campionamento per le verifiche geometriche sul percorso.
+  static const routeSampleMeters = 25.0;
+
   // -------------------------------------------------------------- burst
 
   /// Finestra di osservazione GPS on-demand. Adattiva: ci si ferma appena

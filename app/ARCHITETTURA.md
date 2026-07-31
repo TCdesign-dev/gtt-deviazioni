@@ -65,7 +65,7 @@ smentiscono.
 | `pipeline/line_resolver.dart` | fatto, 5 test — copertura 98,4% |
 | `pipeline/extractor.dart` | da fare |
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
-| `pipeline/route_builder.dart` | da fare |
+| `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
 | `pipeline/stop_impact.dart` | da fare |
 | `ui/` | da fare |
 

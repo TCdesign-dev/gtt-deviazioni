@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -39,6 +40,40 @@ class GttHttp {
     }
     _lastPublicCall = DateTime.now();
     return getText(url);
+  }
+
+  /// POST con corpo JSON, per Valhalla. Rispetta la stessa pausa di
+  /// cortesia di [getTextPolite]: e' un'istanza pubblica offerta da
+  /// FOSSGIS, non un servizio a pagamento.
+  Future<String> postJsonPolite(String url, Map<String, dynamic> body) async {
+    final last = _lastPublicCall;
+    if (last != null) {
+      final elapsed = DateTime.now().difference(last);
+      if (elapsed < GttConfig.publicApiDelay) {
+        await Future<void>.delayed(GttConfig.publicApiDelay - elapsed);
+      }
+    }
+    _lastPublicCall = DateTime.now();
+
+    final http.Response r;
+    try {
+      r = await _client
+          .post(
+            Uri.parse(url),
+            headers: {
+              'User-Agent': GttConfig.userAgent,
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(GttConfig.httpTimeout);
+    } on Object catch (e) {
+      throw GttHttpException(url, null, 'rete non raggiungibile: $e');
+    }
+    if (r.statusCode != 200) {
+      throw GttHttpException(url, r.statusCode, _snippet(r.body));
+    }
+    return r.body;
   }
 
   Future<http.Response> _get(String url) async {

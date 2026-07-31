@@ -68,7 +68,10 @@ smentiscono.
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
 | `pipeline/stop_impact.dart` | fatto, 11 test + catena dal vivo |
-| `ui/` | da fare |
+| `data/` | fatto — impostazioni e orchestrazione |
+| `ui/` | fatto — 3 schermate, 6 test |
+| `core/deviation_service.dart` | fatto — la facciata |
+| `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |
 
 ```bash
 flutter test

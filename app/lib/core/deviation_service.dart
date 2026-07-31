@@ -1,0 +1,304 @@
+import 'geo/projection.dart';
+import 'llm/llm_client.dart';
+import 'models/notice.dart';
+import 'models/transit.dart';
+import 'pipeline/extractor.dart';
+import 'pipeline/geocoder.dart';
+import 'pipeline/line_resolver.dart';
+import 'pipeline/route_builder.dart';
+import 'pipeline/stop_impact.dart';
+import 'sources/alerts_source.dart';
+import 'sources/variazioni_source.dart';
+
+/// Quanto fidarsi di quello che il sistema dice.
+enum Confidence {
+  /// Geometria ricostruita e superate tutte le prove.
+  confermata,
+
+  /// C'e' una geometria ma qualche verifica non torna: si mostra con
+  /// riserva, accanto al testo originale.
+  probabile,
+
+  /// GTT dichiara una variazione ma non siamo riusciti a ricostruirla.
+  /// Si mostra SOLO il testo di GTT: mai una mappa inventata.
+  soloTesto,
+}
+
+/// Cosa succede a una linea per via di un singolo avviso.
+class DeviationReport {
+  const DeviationReport({
+    required this.notice,
+    required this.confidence,
+    this.parsed,
+    this.deviatedGeometry,
+    this.impact,
+    this.whyIncomplete,
+  });
+
+  final RawNotice notice;
+  final Confidence confidence;
+  final ParsedDeviation? parsed;
+  final List<GeoPoint>? deviatedGeometry;
+  final StopImpactResult? impact;
+
+  /// Perche' non siamo arrivati fino in fondo. Va mostrato: dire "non ho
+  /// saputo ricostruirlo" e' onesto, disegnare un percorso a caso no.
+  final String? whyIncomplete;
+
+  bool get hasMap => deviatedGeometry != null && deviatedGeometry!.length > 1;
+  List<StopImpact> get skippedStops => impact?.skipped ?? const [];
+}
+
+/// Stato completo di una linea.
+class LineStatus {
+  const LineStatus({
+    required this.line,
+    required this.shape,
+    required this.reports,
+    required this.checkedAt,
+  });
+
+  final TransitLine line;
+  final RouteShape shape;
+  final List<DeviationReport> reports;
+  final DateTime checkedAt;
+
+  bool get hasDeviations => reports.isNotEmpty;
+
+  /// Tutte le fermate non servite, da tutti gli avvisi attivi.
+  /// Una linea puo' avere piu' deviazioni contemporanee (§10.14).
+  List<StopImpact> get allSkippedStops =>
+      reports.expand((r) => r.skippedStops).toList();
+}
+
+/// La facciata del sistema: da una linea al suo stato.
+///
+/// Tutto il calcolo avviene **per singola linea, su richiesta**. Non si
+/// monitora la rete intera: il vincolo geografico del geocoding e' il
+/// percorso di QUELLA linea, ed e' proprio questo a rendere il passaggio
+/// testo-geometria affidabile.
+class DeviationService {
+  DeviationService({
+    required this.index,
+    required LlmClient llm,
+    Geocoder? geocoder,
+    RouteBuilder? router,
+    AlertsSource? alerts,
+    VariazioniSource? variazioni,
+  })  : _extractor = NoticeExtractor(llm: llm),
+        _geocoder = geocoder ?? Geocoder(),
+        _router = router ?? RouteBuilder(),
+        _alerts = alerts ?? AlertsSource(),
+        _variazioni = variazioni ?? VariazioniSource(),
+        _resolver = LineResolver(index),
+        _impact = StopImpactAnalyzer(index: index);
+
+  final GtfsIndex index;
+  final NoticeExtractor _extractor;
+  final Geocoder _geocoder;
+  final RouteBuilder _router;
+  final AlertsSource _alerts;
+  final VariazioniSource _variazioni;
+  final LineResolver _resolver;
+  final StopImpactAnalyzer _impact;
+
+  /// Gli avvisi di tutte le fonti, presi una volta e riusati per tutte le
+  /// linee della watchlist: sono due richieste, non due per linea.
+  Future<List<RawNotice>> fetchAllNotices() async {
+    final out = <RawNotice>[];
+    try {
+      out.addAll(await _alerts.fetch());
+    } on Object {
+      // Una fonte che cade non deve far cadere l'altra.
+    }
+    try {
+      out.addAll(await _variazioni.fetch());
+    } on Object {
+      // idem
+    }
+    return out;
+  }
+
+  /// Gli avvisi che riguardano [line], fra quelli gia' scaricati.
+  List<RawNotice> noticesFor(TransitLine line, List<RawNotice> all) {
+    final out = <RawNotice>[];
+    for (final n in all) {
+      if (!n.mentionsRouteChange) continue;
+
+      // Dagli alert il route_id arriva gia' canonico: niente da risolvere.
+      if (n.routeIds.contains(line.routeId)) {
+        out.add(n);
+        continue;
+      }
+      // Dalla tabella web il nome e' scritto da un umano.
+      for (final hint in n.lineHints) {
+        if (_resolver
+            .resolve(hint)
+            .resolved
+            .any((l) => l.routeId == line.routeId)) {
+          out.add(n);
+          break;
+        }
+      }
+    }
+    return out;
+  }
+
+  /// Lo stato completo di una linea.
+  ///
+  /// [direction] 0 o 1. Se [allNotices] e' gia' disponibile lo si passa,
+  /// per non riscaricare gli avvisi a ogni linea.
+  Future<LineStatus> statusOf(
+    TransitLine line, {
+    int direction = 0,
+    List<RawNotice>? allNotices,
+    void Function(String phase)? onProgress,
+  }) async {
+    final shape = index.mainShape(line.routeId, direction);
+    if (shape == null) {
+      throw StateError('nessuna geometria per ${line.shortName}');
+    }
+
+    final notices = noticesFor(line, allNotices ?? await fetchAllNotices());
+    final reports = <DeviationReport>[];
+
+    for (final notice in notices) {
+      onProgress?.call('leggo l\'avviso');
+      reports.add(await _analyze(notice, shape));
+    }
+
+    return LineStatus(
+      line: line,
+      shape: shape,
+      reports: reports,
+      checkedAt: DateTime.now(),
+    );
+  }
+
+  /// Perche' la lettura del testo non e' riuscita, detto a chi usa l'app.
+  ///
+  /// Non basta dire "errore": alcune cause sono azionabili — la quota
+  /// giornaliera si azzera, una chiave sbagliata si corregge — e altre no.
+  /// Chi legge deve capire se puo' fare qualcosa o solo aspettare.
+  static String explainExtractionFailure(ExtractionResult r) {
+    final detail = r.detail ?? '';
+    if (detail.contains('free-models-per-day')) {
+      return 'Ho finito le richieste gratuite di oggi (sono 50). '
+          'Si azzerano a mezzanotte UTC.';
+    }
+    if (detail.contains('429')) {
+      return 'Il servizio è momentaneamente sovraccarico. Riprova fra poco.';
+    }
+    if (detail.contains('401') || detail.contains('403')) {
+      return 'La chiave non è valida. Controllala nelle impostazioni.';
+    }
+    if (detail.contains('non raggiungibile') ||
+        detail.contains('TimeoutException')) {
+      return 'Non sono riuscito a contattare il servizio. '
+          'Controlla la connessione.';
+    }
+    if (r.status == ExtractionStatus.parseFailed) {
+      return 'Ho letto l\'avviso ma non sono riuscito a ricavarne '
+          'il percorso.';
+    }
+    return 'Non sono riuscito a interpretare il testo dell\'avviso.';
+  }
+
+  Future<DeviationReport> _analyze(RawNotice notice, RouteShape shape) async {
+    // 1. Testo -> struttura.
+    final extraction = await _extractor.extract(notice);
+    if (!extraction.isUsable) {
+      return DeviationReport(
+        notice: notice,
+        confidence: Confidence.soloTesto,
+        whyIncomplete: explainExtractionFailure(extraction),
+      );
+    }
+    final parsed = extraction.deviations.first;
+
+    // Una sostituzione di mezzo non cambia il percorso: mostrarla come
+    // deviazione sarebbe un allarme falso (§10.10).
+    if (parsed.type == DeviationType.sostituzioneModale) {
+      return DeviationReport(
+        notice: notice,
+        parsed: parsed,
+        confidence: Confidence.confermata,
+        whyIncomplete: 'stesso percorso, cambia solo il tipo di mezzo',
+      );
+    }
+
+    // 2. Toponimi -> coordinate, vincolate al percorso di questa linea.
+    final toponyms = parsed.allToponyms;
+    if (toponyms.length < 2) {
+      return DeviationReport(
+        notice: notice,
+        parsed: parsed,
+        confidence: Confidence.soloTesto,
+        whyIncomplete: 'l\'avviso non nomina abbastanza vie per '
+            'ricostruire il percorso',
+      );
+    }
+
+    final points = <GeoPoint>[];
+    final unresolved = <String>[];
+    for (final t in toponyms) {
+      final r = await _geocoder.locate(t,
+          near: shape, municipality: parsed.municipality);
+      if (r.isUsable) {
+        points.add(r.point!);
+      } else {
+        unresolved.add(t);
+      }
+    }
+    if (points.length < 2) {
+      return DeviationReport(
+        notice: notice,
+        parsed: parsed,
+        confidence: Confidence.soloTesto,
+        whyIncomplete: 'non ho trovato sulla mappa: ${unresolved.join(", ")}',
+      );
+    }
+
+    // 3. Punti -> percorso vero, con le cinque prove.
+    final route = await _router.build(
+      waypoints: points,
+      officialRoute: shape,
+      requiredVias: points.sublist(1),
+    );
+    if (route.geometry == null) {
+      return DeviationReport(
+        notice: notice,
+        parsed: parsed,
+        confidence: Confidence.soloTesto,
+        whyIncomplete: 'non sono riuscito a tracciare il percorso deviato',
+      );
+    }
+
+    // 4. Quali fermate saltano.
+    final impact = _impact.analyze(
+      officialRoute: shape,
+      deviatedRoute: route.geometry!,
+      declaredSuspendedCodes: {
+        ...notice.suspendedStopCodes,
+        ...parsed.suspendedStopCodes,
+      },
+    );
+
+    return DeviationReport(
+      notice: notice,
+      parsed: parsed,
+      deviatedGeometry: route.geometry,
+      impact: impact,
+      confidence: route.isUsable && unresolved.isEmpty
+          ? Confidence.confermata
+          : Confidence.probabile,
+      whyIncomplete: route.isUsable && unresolved.isEmpty
+          ? null
+          : [
+              if (unresolved.isNotEmpty)
+                'non ho trovato: ${unresolved.join(", ")}',
+              ...route.failures.map((f) => f.message),
+            ].join('; '),
+    );
+  }
+}

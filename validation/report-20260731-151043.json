@@ -1,0 +1,301 @@
+{
+  "run_at": "2026-07-31T13:10:26.799519+00:00",
+  "lines": [
+    "55"
+  ],
+  "reachability": {
+    "OTP /index/routes": {
+      "status": 200,
+      "ms": 183,
+      "bytes": 34770,
+      "content_type": "application/json"
+    },
+    "GTFS-RT vehicle_position": {
+      "status": 200,
+      "ms": 608,
+      "bytes": 27162,
+      "content_type": "application/octet-stream"
+    },
+    "GTFS-RT trip_update": {
+      "status": 200,
+      "ms": 1026,
+      "bytes": 62773,
+      "content_type": "application/octet-stream"
+    },
+    "GTFS-RT alerts": {
+      "status": 200,
+      "ms": 156,
+      "bytes": 209800,
+      "content_type": "application/octet-stream"
+    },
+    "Web /cms/variazioni": {
+      "status": 200,
+      "ms": 514,
+      "bytes": 225866,
+      "content_type": "text/html"
+    },
+    "Web /cms/percorari/urbano": {
+      "status": 200,
+      "ms": 1014,
+      "bytes": 169806,
+      "content_type": "text/html"
+    },
+    "GTFS statico (HEAD)": {
+      "status": 200,
+      "ms": 110,
+      "bytes": 24707915,
+      "content_type": "application/zip"
+    }
+  },
+  "vehicle_positions": {
+    "entities": 341,
+    "fields": {
+      "trip_id": 252,
+      "route_id": 341,
+      "position": 341,
+      "bearing": 341,
+      "vehicle_id": 341,
+      "timestamp": 341
+    },
+    "routes": {
+      "4U": 16,
+      "10U": 15,
+      "2U": 10,
+      "15U": 10,
+      "68U": 9,
+      "18U": 8,
+      "55U": 8,
+      "62U": 8,
+      "9U": 7,
+      "11U": 7,
+      "33U": 7,
+      "56U": 7,
+      "42U": 6,
+      "4NU": 6,
+      "17U": 6,
+      "16CDU": 6,
+      "67U": 6,
+      "3U": 6,
+      "49U": 6,
+      "13U": 5,
+      "16CSU": 5,
+      "46U": 5,
+      "52U": 5,
+      "61U": 5,
+      "ST1U": 4,
+      "ST2U": 4,
+      "66U": 4,
+      "77U": 4,
+      "63U": 4,
+      "76U": 4,
+      "74U": 4,
+      "12U": 4,
+      "58BU": 4,
+      "75U": 4,
+      "27U": 4,
+      "43U": 4,
+      "5U": 4,
+      "59U": 4,
+      "19U": 3,
+      "72U": 3,
+      "72BU": 3,
+      "35U": 3,
+      "39U": 3,
+      "34U": 3,
+      "VE1U": 3,
+      "64U": 3,
+      "44U": 3,
+      "71U": 3,
+      "63BU": 3,
+      "58U": 3
+    },
+    "sample": {
+      "entity_id": "36",
+      "trip_id": "28370667U",
+      "route_id": "19U",
+      "vehicle_id": "36U",
+      "lat": 45.07048034667969,
+      "lon": 7.679450035095215,
+      "bearing": 82.0,
+      "stop_id": null,
+      "current_stop_sequence": 0,
+      "timestamp": 1785503399
+    },
+    "trip_ids": [
+      "28370667U",
+      "28374870U",
+      "28374914U",
+      "28368834U",
+      "28370619U",
+      "28370709U",
+      "28370641U",
+      "28368779U",
+      "28373506U",
+      "28402715U"
+    ]
+  },
+  "alerts": {
+    "alerts": 180,
+    "with_route": 174,
+    "with_stop": 161,
+    "with_trip": 0,
+    "samples": [
+      {
+        "header": "Servizi GTT nel mese di agosto.",
+        "description": "Dal 1° agosto al 23 agosto 2026 i servizi GTT subiranno variazioni. \nPer maggiori informazioni visita la sezione dedicata \"avvisi e informazioni di servizio\" del sito www.gtt.to.it.",
+        "cause": 7,
+        "effect": 7,
+        "informed_entity": [
+          {
+            "agency_id": "U",
+            "route_id": null,
+            "stop_id": null,
+            "trip_id": null
+          },
+          {
+            "agency_id": "E",
+            "route_id": null,
+            "stop_id": null,
+            "trip_id": null
+          },
+          {
+            "agency_id": "F",
+            "route_id": null,
+            "stop_id": null,
+            "trip_id": null
+          },
+          {
+            "agency_id": "T",
+            "route_id": null,
+            "stop_id": null,
+            "trip_id": null
+          }
+        ]
+      },
+      {
+        "header": "Linea 13 gestita con autobus",
+        "description": "Da lunedì 13 aprile 2026 e sino a nuove comunicazioni.",
+        "cause": 2,
+        "effect": 7,
+        "informed_entity": [
+          {
+            "agency_id": null,
+            "route_id": "13U",
+            "stop_id": null,
+            "trip_id": null
+          }
+        ]
+      },
+      {
+        "header": "Situazione aggiornata ascensori metro.",
+        "description": "Tutti gli ascensori sono funzionanti.",
+        "cause": 2,
+        "effect": 7,
+        "informed_entity": [
+          {
+            "agency_id": null,
+            "route_id": "METROU",
+            "stop_id": null,
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3619",
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3620",
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3621",
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3622",
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3623",
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3624",
+            "trip_id": null
+          },
+          {
+            "agency_id": null,
+            "route_id": null,
+            "stop_id": "3625",
+            "trip_id": null
+          }
+        ]
+      }
+    ]
+  },
+  "trip_id_bridge": {
+    "bridge": "otp_stale",
+    "rt_trip_ids_resolved": [],
+    "rt_trip_ids_missing": [
+      "28370667U",
+      "28374870U",
+      "28374914U",
+      "28368834U",
+      "28370619U",
+      "28370709U"
+    ],
+    "otp_trip_id": "1:28259877U",
+    "otp_control_200": true
+  },
+  "patterns_ok": true,
+  "web_table": {
+    "tables": 1,
+    "rows": 53,
+    "parsed_rows": 51,
+    "examples": [
+      [
+        "Linea",
+        "Inizio",
+        "Fine presunta",
+        "Direzione",
+        "Descrizione variazione",
+        "Motivo variazione"
+      ],
+      [
+        "1C Festiva",
+        "27/07/2026 ore 7.00",
+        "07/08/2026 ore 19.00",
+        "via Rocchette",
+        "Nel Comune di Chieri. Da via Aldo Moro angolo strada Padana Inferiore deviata in corso Matteotti, percorso normale.",
+        "Lavori Italgas"
+      ],
+      [
+        "1C Festiva - Scolastica Istituto Quarini",
+        "25/05/2026",
+        "-",
+        "via Rocchette – Istituto Quarini",
+        "Nel Comune di Chieri. Da strada Cambiano angolo via Roma deviata in via Diaz, via Cesare Battisti, piazza Europa, percorso normale.",
+        "Lavori Italgas"
+      ],
+      [
+        "2",
+        "19/03/2026 ore 8.00",
+        "-",
+        "entrambe",
+        "Direzione via Corradino: limitata in corso Maroncelli prima di via Genova dove effettua capolinea provvisorio presso la fermata n.1182 - “Maroncelli Cap” (in comune con la linea M1S). Direzione via Ponchielli: dal capolinea provvisorio di corso Maroncelli prosegue per via Ventimiglia, via Corradino, via Genova, corso Maroncelli, percorso normale.",
+        "Lavori presso il capolinea di via Corradino"
+      ]
+    ]
+  }
+}

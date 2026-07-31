@@ -40,17 +40,39 @@ void main() {
     sourceUrl: '',
   );
 
+  /// Il ritorno: percorso diverso, come nella realta' (sensi unici).
+  final ritorno = RouteShape(
+    shapeId: 'T:1:01',
+    routeId: 'TESTU',
+    directionId: 1,
+    headsign: 'RITORNO',
+    points: const [
+      GeoPoint(45.0710, 7.6900),
+      GeoPoint(45.0710, 7.6600),
+    ],
+    stops: const [
+      TransitStop(
+          id: 'S2',
+          code: '200',
+          name: 'Fermata 200',
+          position: GeoPoint(45.0710, 7.6750)),
+    ],
+  );
+
   LineStatus statusWith({
     List<GeoPoint>? deviated,
     List<StopImpact> skipped = const [],
+    RouteShape? withReturn,
   }) =>
       LineStatus(
         line: const TransitLine(routeId: 'TESTU', shortName: 'T'),
         shape: shape,
+        shapeReturn: withReturn,
         checkedAt: DateTime(2026),
         reports: [
           DeviationReport(
             notice: notice,
+            shape: shape,
             confidence: deviated == null
                 ? Confidence.soloTesto
                 : Confidence.confermata,
@@ -213,7 +235,9 @@ void main() {
 
     expect(find.byIcon(Icons.directions_bus), findsNWidgets(2 + 1),
         reason: 'due mezzi sulla mappa piu quello della legenda');
-    expect(find.text('2 in circolazione'), findsOneWidget);
+    // L'ora dice quanto sono fresche: a osservazione finita i marcatori
+    // restano sulla mappa e senza orario sembrerebbero attuali.
+    expect(find.textContaining('2 in circolazione · 10:00'), findsOneWidget);
   });
 
   testWidgets('un mezzo fuori percorso si distingue da uno regolare',
@@ -242,5 +266,35 @@ void main() {
     await pump(tester, statusWith());
     expect(find.byIcon(Icons.directions_bus), findsNothing);
     expect(find.textContaining('in circolazione'), findsNothing);
+  });
+
+  testWidgets('disegna ENTRAMBE le direzioni, distinguibili', (tester) async {
+    // Andata e ritorno sono percorsi diversi e una deviazione ne riguarda
+    // spesso una sola: mostrarne una sola nasconde meta' della linea.
+    await pump(tester, statusWith(withReturn: ritorno));
+
+    final layer =
+        tester.widget<PolylineLayer>(find.byType(PolylineLayer<Object>));
+    expect(layer.polylines.length, equals(2));
+    expect(layer.polylines[0].color, isNot(equals(layer.polylines[1].color)),
+        reason: 'due direzioni dello stesso colore non si distinguono');
+
+    // La legenda nomina i capolinea, non dice genericamente "percorso".
+    expect(find.textContaining('PROVA'), findsOneWidget);
+    expect(find.textContaining('RITORNO'), findsOneWidget);
+  });
+
+  testWidgets('con una direzione sola la legenda resta semplice',
+      (tester) async {
+    await pump(tester, statusWith());
+    expect(find.text('percorso normale'), findsOneWidget);
+  });
+
+  testWidgets('mostra le fermate di entrambe le direzioni, senza doppioni',
+      (tester) async {
+    await pump(tester, statusWith(withReturn: ritorno));
+    // Una fermata per direzione + due capolinea del solo percorso di
+    // riferimento.
+    expect(find.text('2 fermate'), findsOneWidget);
   });
 }

@@ -44,10 +44,21 @@ class _LineMapState extends State<LineMap> {
   @override
   Widget build(BuildContext context) {
     final status = widget.status;
-    final official = status.shape.points
-        .map((p) => LatLng(p.lat, p.lon))
-        .toList(growable: false);
-    if (official.length < 2) return const SizedBox.shrink();
+
+    // Andata e ritorno sono percorsi diversi e vanno mostrati entrambi:
+    // spesso non coincidono, per via dei sensi unici, e una deviazione ne
+    // riguarda spesso una sola.
+    final directions = status.mainShapes
+        .where((s) => s.points.length > 1)
+        .map((s) => (
+              shape: s,
+              points: s.points
+                  .map((p) => LatLng(p.lat, p.lon))
+                  .toList(growable: false),
+            ))
+        .toList();
+    if (directions.isEmpty) return const SizedBox.shrink();
+    final official = directions.first.points;
 
     final deviations = status.reports
         .where((r) => r.hasMap)
@@ -61,12 +72,17 @@ class _LineMapState extends State<LineMap> {
     final skipped = {
       for (final s in status.allSkippedStops) s.stop.id: s,
     };
-    final served = status.shape.stops
-        .where((s) => !skipped.containsKey(s.id))
-        .toList(growable: false);
+    // Le fermate di TUTTE le direzioni, senza doppioni: molte sono in
+    // comune fra andata e ritorno (banchine opposte hanno id diversi).
+    final served = {
+      for (final d in directions)
+        for (final s in d.shape.stops)
+          if (!skipped.containsKey(s.id)) s.id: s,
+    }.values.toList(growable: false);
 
-    final bounds = LatLngBounds.fromPoints(
-        deviations.isNotEmpty ? deviations.expand((d) => d).toList() : official);
+    final bounds = LatLngBounds.fromPoints(deviations.isNotEmpty
+        ? deviations.expand((d) => d).toList()
+        : directions.expand((d) => d.points).toList());
 
     return Column(
       children: [
@@ -92,11 +108,15 @@ class _LineMapState extends State<LineMap> {
               ),
               PolylineLayer(
                 polylines: [
-                  Polyline(
-                    points: official,
-                    strokeWidth: 4,
-                    color: Colors.blueGrey.withValues(alpha: 0.55),
-                  ),
+                  // Le due direzioni con tonalita' diverse: dove i
+                  // percorsi divergono si deve poter capire quale e' quale.
+                  for (var i = 0; i < directions.length; i++)
+                    Polyline(
+                      points: directions[i].points,
+                      strokeWidth: 4,
+                      color: (i == 0 ? Colors.blueGrey : Colors.teal)
+                          .withValues(alpha: 0.55),
+                    ),
                   for (final d in deviations)
                     Polyline(
                       points: d,
@@ -161,6 +181,8 @@ class _LineMapState extends State<LineMap> {
             skippedCount: skipped.length,
             servedCount: served.length,
             vehicleCount: widget.vehicles.length,
+            vehiclesSeenAt: _lastSeen,
+            directions: [for (final d in directions) d.shape.headsign],
           ),
       ],
     );
@@ -217,6 +239,21 @@ class _LineMapState extends State<LineMap> {
   /// chiedono almeno 44 pt; qui si sta piu' bassi perche' le fermate sono
   /// vicine fra loro e bersagli enormi si ruberebbero i tocchi a vicenda.
   static const _tapTarget = 34.0;
+
+  /// Quando risale l'ultima posizione ricevuta.
+  ///
+  /// A osservazione finita i marcatori restano sulla mappa: senza dire
+  /// quando sono stati visti, dopo dieci minuti si guarderebbero posizioni
+  /// vecchie credendole attuali.
+  DateTime? get _lastSeen {
+    DateTime? latest;
+    for (final t in widget.vehicles) {
+      for (final p in t.points) {
+        if (latest == null || p.seenAt.isAfter(latest)) latest = p.seenAt;
+      }
+    }
+    return latest;
+  }
 
   /// Un mezzo nella sua ultima posizione nota.
   ///
@@ -330,12 +367,18 @@ class _Legend extends StatelessWidget {
     required this.skippedCount,
     required this.servedCount,
     required this.vehicleCount,
+    required this.vehiclesSeenAt,
+    required this.directions,
   });
 
   final bool hasDeviation;
   final int skippedCount;
   final int servedCount;
   final int vehicleCount;
+  final DateTime? vehiclesSeenAt;
+
+  /// I capolinea delle direzioni disegnate, in ordine.
+  final List<String> directions;
 
   @override
   Widget build(BuildContext context) {
@@ -346,8 +389,14 @@ class _Legend extends StatelessWidget {
         spacing: 14,
         runSpacing: 4,
         children: [
-          _line(Colors.blueGrey.withValues(alpha: 0.55), 'percorso normale',
-              style),
+          for (var i = 0; i < directions.length; i++)
+            _line(
+                (i == 0 ? Colors.blueGrey : Colors.teal)
+                    .withValues(alpha: 0.55),
+                directions.length == 1
+                    ? 'percorso normale'
+                    : '→ ${_shortHeadsign(directions[i])}',
+                style),
           if (hasDeviation)
             _line(Colors.red.shade700, 'percorso deviato', style)
           else
@@ -364,13 +413,28 @@ class _Legend extends StatelessWidget {
                 Icon(Icons.directions_bus,
                     size: 13, color: Colors.blue.shade700),
                 const SizedBox(width: 4),
-                Text('$vehicleCount in circolazione', style: style),
+                Text(
+                    '$vehicleCount in circolazione'
+                    '${vehiclesSeenAt == null ? "" : " · ${_hhmm(vehiclesSeenAt!)}"}',
+                    style: style),
               ],
             ),
           Text('tocca una fermata per il nome', style: style),
         ],
       ),
     );
+  }
+
+  static String _hhmm(DateTime t) {
+    final l = t.toLocal();
+    return '${l.hour.toString().padLeft(2, "0")}:'
+        '${l.minute.toString().padLeft(2, "0")}';
+  }
+
+  /// Il capolinea sta in una legenda: va accorciato o la riga esplode.
+  static String _shortHeadsign(String h) {
+    final first = h.split(',').first.trim();
+    return first.length <= 22 ? first : '${first.substring(0, 21)}…';
   }
 
   Widget _line(Color c, String label, TextStyle? style) => Row(

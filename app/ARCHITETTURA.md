@@ -110,6 +110,9 @@ quante ne siano usate:
   saltate sono in linea d'aria, e l'interfaccia lo dichiara.
 - **non deduce il punto di rientro** quando l'avviso dice solo "percorso
   normale" senza nominare la via.
+- **non distingue le varianti dentro una direzione**: usa la principale
+  (quella con piu' corse). Una deviazione che riguarda solo la corsa
+  limitata verrebbe calcolata sul percorso intero.
 
 ## Un limite di GTT che vale la pena sapere
 

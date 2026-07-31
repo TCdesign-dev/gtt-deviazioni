@@ -64,7 +64,7 @@ smentiscono.
 | `sources/variazioni_source.dart` | fatto, 5 test su pagina reale |
 | `pipeline/line_resolver.dart` | fatto, 5 test — copertura 98,4% |
 | `pipeline/extractor.dart` | da fare |
-| `pipeline/geocoder.dart` | da fare |
+| `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | da fare |
 | `pipeline/stop_impact.dart` | da fare |
 | `ui/` | da fare |

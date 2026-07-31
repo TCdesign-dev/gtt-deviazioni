@@ -323,7 +323,16 @@ def main() -> int:
                     help="confronta con lo snapshot precedente")
     ap.add_argument("--refresh", action="store_true",
                     help="riscarica lo zip anche se gia' presente")
+    ap.add_argument("--keep", type=int, default=14,
+                    help="quanti snapshot conservare (minimo 2, default 14)")
     args = ap.parse_args()
+
+    # La rotazione avviene prima del confronto: con keep=1 resterebbe solo lo
+    # snapshot appena scritto e il diff non avrebbe piu' un termine di paragone.
+    if args.keep < 2:
+        log("  !! --keep deve essere almeno 2: al confronto serve il "
+            "precedente.", C_ERR)
+        return 2
 
     outdir = Path(args.out)
     snap_dir = outdir / "gtfs_snapshots"
@@ -346,6 +355,15 @@ def main() -> int:
     path = snap_dir / f"gtfs-{stamp}.json"
     path.write_text(json.dumps(snap, ensure_ascii=False), encoding="utf-8")
     log(f"  Salvato: {path}  ({path.stat().st_size:,} B)", C_OK)
+
+    # Rotazione: uno snapshot pesa ~700 KB e ne produciamo uno al giorno.
+    # Senza questo il repo cresce di ~260 MB l'anno. Per il diff serve solo
+    # il precedente; il resto e' storico, e KEEP giorni bastano.
+    old = sorted(snap_dir.glob("gtfs-*.json"))[:-args.keep]
+    for f in old:
+        f.unlink()
+    if old:
+        log(f"  Rimossi {len(old)} snapshot oltre i {args.keep} piu' recenti", C_DIM)
 
     if args.compare:
         prev_files = sorted(snap_dir.glob("gtfs-*.json"))[:-1]

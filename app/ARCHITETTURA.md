@@ -110,3 +110,16 @@ quante ne siano usate:
   saltate sono in linea d'aria, e l'interfaccia lo dichiara.
 - **non deduce il punto di rientro** quando l'avviso dice solo "percorso
   normale" senza nominare la via.
+
+## Un limite di GTT che vale la pena sapere
+
+**Il feed delle posizioni si spegne di notte, ma il servizio no.**
+Misurato il 31/07/2026 alle 23:39: `vehicle_position` restituisce un
+protobuf vuoto di 15 byte, mentre `trip_update` (26 KB) e `alerts`
+(197 KB) continuano a rispondere. Il GTFS pero' dice che la linea 15 ha
+corse programmate fino alle **01:52**, con 2.920 passaggi dopo le 23:30.
+
+Quindi i mezzi circolano e GTT semplicemente smette di dire dove sono.
+Per questo l'app distingue "feed spento" da "nessun mezzo su questa
+linea": confonderli significherebbe dire che il servizio e' finito quando
+non lo e'.

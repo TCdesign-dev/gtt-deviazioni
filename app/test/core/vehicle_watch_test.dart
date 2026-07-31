@@ -86,12 +86,29 @@ void main() {
   });
 
   test('nessun mezzo NON significa "tutto regolare"', () async {
-    // La distinzione che conta: di notte o su una linea scarica non c'e'
-    // nulla da guardare, e dire "tutto bene" sarebbe inventare.
+    // La distinzione che conta: su una linea scarica non c'e' nulla da
+    // guardare, e dire "tutto bene" sarebbe inventare.
     final r = await run([[], []]);
     expect(r.outcome, equals(WatchOutcome.nessunMezzo));
     expect(r.summary, contains('non posso dire nulla'));
     expect(r.summary, isNot(contains('normale')));
+  });
+
+  test('feed spento NON significa "nessun mezzo in circolazione"', () async {
+    // MISURATO: dopo le 23:30 GTT restituisce un protobuf vuoto mentre le
+    // corse continuano (la linea 15 ha corse fino alle 01:52). Dire
+    // "nessun mezzo in circolazione" sarebbe falso.
+    final source = _ScriptedSource([[], [], []], feedTotal: 0);
+    final r = await VehicleWatch(
+      source: source,
+      pollInterval: Duration.zero,
+      maxDuration: const Duration(seconds: 5),
+    ).watch(line: line, shapes: [principale]);
+
+    expect(r.outcome, equals(WatchOutcome.feedSpento));
+    expect(r.summary, contains('non sta pubblicando'));
+    expect(r.summary, contains('non vuol dire che il servizio sia finito'));
+    expect(r.summary, isNot(contains('Nessun mezzo di questa linea')));
   });
 
   test('se la linea non ha mezzi, smette presto invece di insistere',
@@ -155,16 +172,24 @@ void main() {
 
 /// Sorgente con risposte preparate: un campione per chiamata.
 class _ScriptedSource implements VehiclesSource {
-  _ScriptedSource(this.samples);
+  _ScriptedSource(this.samples, {this.feedTotal});
 
   final List<List<VehicleObservation>> samples;
+
+  /// Se null, si finge un feed acceso con altri mezzi in giro.
+  final int? feedTotal;
   int calls = 0;
 
   @override
-  Future<List<VehicleObservation>> fetch({String? routeId}) async {
-    final s = calls < samples.length ? samples[calls] : const <VehicleObservation>[];
+  Future<VehicleSnapshot> fetch({String? routeId}) async {
+    final s =
+        calls < samples.length ? samples[calls] : const <VehicleObservation>[];
     calls++;
-    return s;
+    // feedTotal dice quanti mezzi c'erano IN TUTTO il feed: di default si
+    // finge un feed acceso, cosi' i test esistenti misurano "nessun mezzo
+    // su questa linea" e non "feed spento".
+    return VehicleSnapshot(
+        matching: s, totalInFeed: feedTotal ?? (s.isEmpty ? 7 : s.length));
   }
 
   @override

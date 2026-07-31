@@ -27,6 +27,14 @@ enum WatchOutcome {
 
   /// Mezzi visti ma troppo pochi punti per dire qualcosa.
   inconcludente,
+
+  /// GTT non sta pubblicando le posizioni di NESSUN mezzo.
+  ///
+  /// Diverso da [nessunMezzo], e la differenza non e' accademica:
+  /// MISURATO, dopo le 23:30 il feed torna vuoto mentre il servizio
+  /// continua — la linea 15 ha corse programmate fino alle 01:52. Dire
+  /// "nessun mezzo in circolazione" sarebbe falso.
+  feedSpento,
 }
 
 /// Un mezzo osservato piu' volte, con la sua distanza dal percorso.
@@ -72,9 +80,13 @@ class WatchResult {
 
   /// Come si dice a una persona, senza gerghi.
   String get summary => switch (outcome) {
+        WatchOutcome.feedSpento =>
+          'GTT non sta pubblicando le posizioni dei mezzi in questo momento. '
+              'Succede di notte, anche quando le corse continuano: non posso '
+              'guardare, ma non vuol dire che il servizio sia finito.',
         WatchOutcome.nessunMezzo =>
-          'Nessun mezzo in circolazione su questa linea in questo momento: '
-              'non posso dire nulla.',
+          'Nessun mezzo di questa linea è in circolazione adesso, mentre '
+              'altre linee ne hanno: non posso dire nulla sulla deviazione.',
         WatchOutcome.inconcludente =>
           'Ho visto $vehiclesSeen ${vehiclesSeen == 1 ? "mezzo" : "mezzi"} '
               'ma per troppo poco tempo per trarne una conclusione.',
@@ -141,17 +153,21 @@ class VehicleWatch {
         .toList(growable: false);
     var samples = 0;
 
+    var feedWasOff = true;
+
     while (DateTime.now().difference(started) < maxDuration) {
-      List<VehicleObservation> seen;
+      VehicleSnapshot snapshot;
       try {
-        seen = await _source.fetch(routeId: line.routeId);
+        snapshot = await _source.fetch(routeId: line.routeId);
       } on Object {
         // Un campione perso non e' un fallimento: si riprova al prossimo.
-        seen = const [];
+        snapshot = const VehicleSnapshot(matching: [], totalInFeed: 0);
       }
       samples++;
+      // Basta un campione con qualcosa dentro per sapere che il feed va.
+      if (!snapshot.feedIsOff) feedWasOff = false;
 
-      for (final o in seen) {
+      for (final o in snapshot.matching) {
         final track = tracks.putIfAbsent(o.vehicleId, () => VehicleTrack(o.vehicleId));
         // Lo stesso timestamp ripetuto non e' un punto nuovo: il feed si
         // aggiorna ogni ~20 s, il polling puo' essere piu' fitto.
@@ -180,7 +196,7 @@ class VehicleWatch {
     }
 
     return WatchResult(
-      outcome: _classify(tracks.values),
+      outcome: _classify(tracks.values, feedWasOff: feedWasOff),
       tracks: tracks.values.toList(growable: false),
       observed: DateTime.now().difference(started),
       samples: samples,
@@ -195,7 +211,10 @@ class VehicleWatch {
     return usable >= minVehicles;
   }
 
-  WatchOutcome _classify(Iterable<VehicleTrack> tracks) {
+  WatchOutcome _classify(Iterable<VehicleTrack> tracks,
+      {required bool feedWasOff}) {
+    // L'ordine conta: un feed spento non e' assenza di mezzi.
+    if (tracks.isEmpty && feedWasOff) return WatchOutcome.feedSpento;
     if (tracks.isEmpty) return WatchOutcome.nessunMezzo;
     final usable = tracks.where((t) => t.points.length >= 2).toList();
     if (usable.isEmpty) return WatchOutcome.inconcludente;

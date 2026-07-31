@@ -29,6 +29,29 @@ class VehicleObservation {
   String toString() => '$vehicleId@$position';
 }
 
+/// Cosa c'era nel feed a un dato istante.
+///
+/// Distingue due cose che sembrano uguali e non lo sono: "nessun mezzo su
+/// questa linea" e "GTT non sta pubblicando le posizioni di nessuno".
+class VehicleSnapshot {
+  const VehicleSnapshot({required this.matching, required this.totalInFeed});
+
+  /// I mezzi della linea richiesta.
+  final List<VehicleObservation> matching;
+
+  /// Quanti mezzi c'erano in tutto il feed, tutte le linee.
+  final int totalInFeed;
+
+  /// Il feed e' spento: GTT non sta pubblicando NIENTE.
+  ///
+  /// MISURATO il 31/07/2026: dopo le 23:30 `vehicle_position` restituisce
+  /// un protobuf vuoto di 15 byte, mentre `trip_update` e `alerts`
+  /// continuano a rispondere. I mezzi pero' circolano davvero — il GTFS
+  /// ha corse programmate fino alle 01:52. Quindi feed vuoto NON
+  /// significa servizio finito, e dirlo sarebbe una bugia.
+  bool get feedIsOff => totalInFeed == 0;
+}
+
 /// Legge le posizioni dei mezzi dal feed GTFS-Realtime di GTT.
 ///
 /// Un dato utile ma sporco: MISURATO il 31/07/2026, circa il 3% dei mezzi
@@ -40,9 +63,12 @@ class VehiclesSource {
 
   final GttHttp _http;
 
-  Future<List<VehicleObservation>> fetch({String? routeId}) async {
+  Future<VehicleSnapshot> fetch({String? routeId}) async {
     final bytes = await _http.getBytes(GttConfig.vehiclesUrl);
-    return parse(bytes, routeId: routeId);
+    return VehicleSnapshot(
+      matching: parse(bytes, routeId: routeId),
+      totalInFeed: parse(bytes).length,
+    );
   }
 
   /// Separato da [fetch] per poterlo provare su un payload salvato.

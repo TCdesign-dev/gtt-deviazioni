@@ -144,6 +144,7 @@ class _Outcome extends StatelessWidget {
       WatchOutcome.tuttiSulPercorso => (Colors.green.shade700, Icons.check_circle_outline),
       WatchOutcome.fuoriPercorso => (scheme.error, Icons.alt_route),
       WatchOutcome.nessunMezzo => (scheme.outline, Icons.bedtime_outlined),
+      WatchOutcome.feedSpento => (scheme.outline, Icons.cloud_off_outlined),
       WatchOutcome.inconcludente => (scheme.outline, Icons.hourglass_empty),
     };
 

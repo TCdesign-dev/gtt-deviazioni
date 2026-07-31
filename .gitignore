@@ -3,3 +3,4 @@ data/gtfs/
 .venv/
 __pycache__/
 validation/logs/
+validation/ALERT-*.md

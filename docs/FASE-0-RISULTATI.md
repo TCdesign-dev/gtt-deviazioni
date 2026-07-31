@@ -285,6 +285,14 @@ indica come il fallimento più grave.
    Testato end-to-end il 31/07 con `launchctl kickstart`: `exit 0`, e su input identico
    rileva zero cambiamenti — gli hash sono deterministici, niente falsi positivi.
 
+   **Quando il diff trova qualcosa non resta nel log:** `scripts/notify_diff.py` scrive
+   `validation/ALERT-<data>.md` e manda una notifica macOS. Il ramo "ha trovato qualcosa"
+   è testabile senza aspettare che il GTFS cambi:
+
+   ```bash
+   .venv/bin/python scripts/notify_diff.py validation/last_diff.json --stamp TEST --dry-run
+   ```
+
 2. ~~Raccogliere le fixture~~ — **fatto** (§9-bis). Restano da **rivedere a mano** le 34
    annotazioni, partendo da `web-009`.
 

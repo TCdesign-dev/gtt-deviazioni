@@ -220,22 +220,30 @@ def build_snapshot(zip_path: Path, wanted: set[str] | None) -> dict[str, Any]:
 
 # ------------------------------------------------------------------- compare
 
-def compare(prev: dict, curr: dict) -> int:
+def compare(prev: dict, curr: dict) -> dict[str, Any]:
+    """Ritorna un riepilogo strutturato, non solo un conteggio: serve a
+    daily_snapshot.sh per decidere se svegliare qualcuno (un log che nessuno
+    legge non e' un risultato)."""
     section("CONFRONTO SNAPSHOT  <<< TEST DEL SEGNALE A >>>")
     log(f"  precedente : {prev.get('captured_at')}  "
         f"feed_version {prev.get('feed_version')}")
     log(f"  attuale    : {curr.get('captured_at')}  "
         f"feed_version {curr.get('feed_version')}")
-    if prev.get("feed_version") == curr.get("feed_version"):
+    same_feed = prev.get("feed_version") == curr.get("feed_version")
+    if same_feed:
         log("  ~~   stesso feed_version: GTT non ha ripubblicato il GTFS.", C_WARN)
     log()
 
     ps, cs = prev.get("shapes", {}), curr.get("shapes", {})
-    changes = 0
+    events: list[dict[str, Any]] = []
 
     def label(d: dict) -> str:
         return (f"{str(d.get('route_short_name')):<8} dir{d.get('direction_id')} "
                 f"{str(d.get('headsign'))[:34]:<36}")
+
+    def short(d: dict, sid: str) -> str:
+        return (f"{d.get('route_short_name')} dir{d.get('direction_id')} "
+                f"\"{d.get('headsign')}\" [{sid}]")
 
     for sid in sorted(cs.keys() - ps.keys()):
         d = cs[sid]
@@ -243,13 +251,17 @@ def compare(prev: dict, curr: dict) -> int:
         log(f"      {d['n_points']} punti, {d['length_m']} m, "
             f"{d['n_stops']} fermate, {d['n_trips']} corse", C_DIM)
         log("      -> possibile variante creata da GTT per una deviazione", C_DIM)
-        changes += 1
+        events.append({"kind": "shape_nuova", "shape_id": sid,
+                       "line": d.get("route_short_name"),
+                       "desc": short(d, sid), "length_m": d["length_m"],
+                       "n_stops": d["n_stops"], "n_trips": d["n_trips"]})
 
     for sid in sorted(ps.keys() - cs.keys()):
         d = ps[sid]
         log(f"  - SHAPE RIMOSSA   {label(d)} {sid}", C_WARN)
         log("      -> possibile fine di una deviazione", C_DIM)
-        changes += 1
+        events.append({"kind": "shape_rimossa", "shape_id": sid,
+                       "line": d.get("route_short_name"), "desc": short(d, sid)})
 
     for sid in sorted(ps.keys() & cs.keys()):
         a, b = ps[sid], cs[sid]
@@ -258,7 +270,11 @@ def compare(prev: dict, curr: dict) -> int:
             log(f"      punti {a['n_points']} -> {b['n_points']}   "
                 f"lunghezza {a['length_m']} -> {b['length_m']} m "
                 f"({b['length_m'] - a['length_m']:+d} m)", C_DIM)
-            changes += 1
+            events.append({"kind": "geometria_cambiata", "shape_id": sid,
+                           "line": b.get("route_short_name"),
+                           "desc": short(b, sid),
+                           "delta_m": b["length_m"] - a["length_m"],
+                           "length_m": [a["length_m"], b["length_m"]]})
         if a["stops_hash"] != b["stops_hash"]:
             sa, sb = set(a.get("stop_ids", [])), set(b.get("stop_ids", []))
             log(f"  ! FERMATE CAMBIATE    {label(b)} {sid}  "
@@ -267,18 +283,32 @@ def compare(prev: dict, curr: dict) -> int:
                 log(f"      non piu' servite: {sorted(sa - sb)}", C_DIM)
             if sb - sa:
                 log(f"      aggiunte        : {sorted(sb - sa)}", C_DIM)
-            changes += 1
+            events.append({"kind": "fermate_cambiate", "shape_id": sid,
+                           "line": b.get("route_short_name"),
+                           "desc": short(b, sid),
+                           "rimosse": sorted(sa - sb), "aggiunte": sorted(sb - sa)})
 
     log()
     log("  >>> VERDETTO SEGNALE A", C_HEAD)
-    if changes:
-        log(f"  OK   {changes} cambiamenti rilevati sul GTFS statico.", C_OK)
+    if events:
+        log(f"  OK   {len(events)} cambiamenti rilevati sul GTFS statico.", C_OK)
         log("       GTT codifica le variazioni nel feed. Il pattern diffing", C_OK)
         log("       su GTFS statico e' praticabile: mettilo al centro.", C_OK)
     else:
         log("  ~~   Nessun cambiamento in questo intervallo.", C_WARN)
         log("       Non conclusivo dopo un solo giorno. Servono 3-7 giorni.", C_DIM)
-    return changes
+
+    return {
+        "compared_at": datetime.now(timezone.utc).isoformat(),
+        "prev_captured_at": prev.get("captured_at"),
+        "curr_captured_at": curr.get("captured_at"),
+        "prev_feed_version": prev.get("feed_version"),
+        "curr_feed_version": curr.get("feed_version"),
+        "same_feed_version": same_feed,
+        "n_changes": len(events),
+        "lines_touched": sorted({e["line"] for e in events if e.get("line")}),
+        "events": events,
+    }
 
 
 # ---------------------------------------------------------------------- main
@@ -323,7 +353,13 @@ def main() -> int:
             log("\n  ~~   nessuno snapshot precedente. Riesegui tra 24 ore.", C_WARN)
         else:
             prev = json.loads(prev_files[-1].read_text(encoding="utf-8"))
-            compare(prev, snap)
+            result = compare(prev, snap)
+            # Esito in forma leggibile da uno script: e' cio' che permette al
+            # job giornaliero di segnalare i cambiamenti invece di limitarsi
+            # a scriverli in un log.
+            (outdir / "last_diff.json").write_text(
+                json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            log(f"\n  Esito strutturato: {outdir / 'last_diff.json'}", C_DIM)
 
     log()
     return 0

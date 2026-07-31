@@ -1,5 +1,9 @@
 # Struttura dell'app
 
+> Per il quadro completo — misure, decisioni, trappole — vedi
+> [`CLAUDE.md`](../CLAUDE.md) nella radice del repository.
+> Qui c'è solo la struttura dei moduli.
+
 Una regola sola, ma vale per tutto il resto:
 
 > **`lib/core/` è Dart puro. Nessun `import 'package:flutter/...'`.**

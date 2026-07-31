@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../core/deviation_service.dart';
-import '../core/geo/projection.dart' as geo;
 import '../core/pipeline/stop_impact.dart';
+import 'line_map.dart';
 
 /// Il dettaglio di una linea: cosa succede, dove, e cosa fare.
 ///
@@ -36,14 +34,21 @@ class LineScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: status.reports.isEmpty
-          ? const _AllGood()
-          : ListView(
-              children: [
-                for (final report in status.reports)
-                  _ReportCard(report: report, status: status),
-              ],
-            ),
+      body: ListView(
+        children: [
+          // La mappa sta in cima e c'e' SEMPRE: vedere dove passa la linea
+          // serve anche quando la deviazione non si e' potuta ricostruire.
+          LineMap(status: status),
+          if (status.reports.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: _AllGood(),
+            )
+          else
+            for (final report in status.reports)
+              _ReportCard(report: report, status: status),
+        ],
+      ),
     );
   }
 }
@@ -54,7 +59,7 @@ class _AllGood extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_circle_outline,
                 size: 56, color: Colors.green.shade700),
@@ -91,9 +96,6 @@ class _ReportCard extends StatelessWidget {
                   'fermate del tratto.'),
             ),
 
-          // 2. La mappa, come conferma.
-          if (report.hasMap)
-            _DeviationMap(report: report, status: status),
 
           // 3. Il testo di GTT, sempre.
           _OriginalText(report: report),
@@ -231,99 +233,6 @@ class _SkippedStops extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _DeviationMap extends StatelessWidget {
-  const _DeviationMap({required this.report, required this.status});
-
-  final DeviationReport report;
-  final LineStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final deviated = report.deviatedGeometry!
-        .map((p) => LatLng(p.lat, p.lon))
-        .toList(growable: false);
-    final official = status.shape.points
-        .map((p) => LatLng(p.lat, p.lon))
-        .toList(growable: false);
-
-    final centre = _centre(report.deviatedGeometry!);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 240,
-          child: FlutterMap(
-            options: MapOptions(
-              initialCenter: centre,
-              initialZoom: 13.5,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
-              ),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'dev.tcdesign.gtt_deviazioni',
-              ),
-              PolylineLayer(
-                polylines: [
-                  // Percorso normale: grigio tratteggiato in sottofondo.
-                  Polyline(
-                    points: official,
-                    strokeWidth: 3,
-                    color: Colors.grey.withValues(alpha: 0.7),
-                  ),
-                  // Deviazione: rossa e spessa, e' quello che conta.
-                  Polyline(
-                    points: deviated,
-                    strokeWidth: 5,
-                    color: Colors.red.shade700,
-                  ),
-                ],
-              ),
-              MarkerLayer(
-                markers: [
-                  for (final s in report.skippedStops)
-                    Marker(
-                      point: LatLng(
-                          s.stop.position.lat, s.stop.position.lon),
-                      width: 16,
-                      height: 16,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.error,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const RichAttributionWidget(
-                attributions: [
-                  TextSourceAttribution('OpenStreetMap'),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static LatLng _centre(List<geo.GeoPoint> pts) {
-    var lat = 0.0, lon = 0.0;
-    for (final p in pts) {
-      lat += p.lat;
-      lon += p.lon;
-    }
-    return LatLng(lat / pts.length, lon / pts.length);
   }
 }
 

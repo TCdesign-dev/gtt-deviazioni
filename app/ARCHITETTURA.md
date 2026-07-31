@@ -69,7 +69,7 @@ smentiscono.
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
 | `pipeline/stop_impact.dart` | fatto, 11 test + catena dal vivo |
 | `data/` | fatto — impostazioni e orchestrazione |
-| `ui/` | fatto — 3 schermate, 6 test |
+| `ui/` | fatto — 3 schermate + mappa, 11 test |
 | `core/deviation_service.dart` | fatto — la facciata |
 | `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |
 
@@ -96,3 +96,19 @@ sostituisce i vertici taglia gli angoli, e accorcia il percorso proprio nei
 punti di svolta — che sono quelli dove una deviazione si distingue da un
 percorso normale. `densify()` aggiunge punti senza toglierne, e un test
 verifica che la lunghezza resti identica al metro.
+
+## Cosa il sistema NON fa (ancora)
+
+Per non confondersi leggendo `config.dart`, che contiene piu' costanti di
+quante ne siano usate:
+
+- **non osserva le posizioni dei mezzi.** Il Segnale C della specifica e'
+  stato misurato (`scripts/burst_probe.py`) ma non e' implementato
+  nell'app: `burstPollInterval`, `burstMinVehicles` e `offRouteMeters`
+  sono costanti tarate e non ancora usate da nessuno.
+- **non manda notifiche.** Servirebbe qualcosa fuori dal telefono che
+  sorvegli gli avvisi: iOS non regge il polling in background.
+- **non calcola le distanze a piedi reali.** Le alternative alle fermate
+  saltate sono in linea d'aria, e l'interfaccia lo dichiara.
+- **non deduce il punto di rientro** quando l'avviso dice solo "percorso
+  normale" senza nominare la via.

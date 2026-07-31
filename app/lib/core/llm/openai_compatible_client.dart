@@ -49,11 +49,22 @@ class OpenAiCompatibleClient implements LlmClient {
   /// OpenRouter: una chiave sola per molti modelli, inclusi diversi
   /// gratuiti (suffisso ":free").
   ///
+  /// LIMITE DA CONOSCERE: il piano gratuito da' **50 richieste al giorno**
+  /// in totale su tutti i modelli ":free" (con 10 dollari di credito
+  /// diventano 1000). Per l'uso vero — una manciata di avvisi nuovi al
+  /// giorno — bastano; per rielaborare tutti i 198 avvisi in fila, no.
+  ///
   /// L'elenco dei gratuiti CAMBIA nel tempo: il 31/07/2026 ce n'erano 14,
   /// di cui solo 5 con output strutturato — che per un compito di
   /// estrazione e' il discriminante vero. Verificato che
   /// `google/gemma-3-27b-it:free`, valore predefinito ovvio, non esiste
   /// piu': avrebbe dato 404 in silenzio.
+  ///
+  /// Il predefinito e' SCELTO PER MISURA sui 34 avvisi annotati, non per
+  /// fama: nemotron-3-super ha estratto 34 su 34 senza inventare nulla
+  /// (tipo 92,3%, vie 94,7%), mentre gemma-4-26b si e' inventato "corso
+  /// Marradoncelli" fondendo due nomi. Un toponimo inventato diventa una
+  /// mappa sbagliata, che e' il fallimento peggiore secondo §11.4.
   ///
   /// Per rivedere l'elenco (non serve la chiave):
   ///   curl -s https://openrouter.ai/api/v1/models \
@@ -62,7 +73,7 @@ class OpenAiCompatibleClient implements LlmClient {
   ///              | .id'
   factory OpenAiCompatibleClient.openRouter({
     required String apiKey,
-    String model = 'google/gemma-4-31b-it:free',
+    String model = 'nvidia/nemotron-3-super-120b-a12b:free',
     http.Client? client,
   }) =>
       OpenAiCompatibleClient(
@@ -71,6 +82,9 @@ class OpenAiCompatibleClient implements LlmClient {
         providerName: 'openrouter',
         apiKey: apiKey,
         extraHeaders: const {'X-Title': 'gtt-deviazioni'},
+        // I modelli gratuiti stanno in coda dietro a quelli a pagamento:
+        // 30 s non bastano e il timeout sembrerebbe un errore di rete.
+        timeout: const Duration(seconds: 90),
         client: client,
       );
 

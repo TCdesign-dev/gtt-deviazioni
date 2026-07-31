@@ -39,7 +39,7 @@ Future<void> main(List<String> args) async {
         exit(1);
       }
       llm = OpenAiCompatibleClient.openRouter(
-          apiKey: key, model: model ?? 'google/gemma-4-31b-it:free');
+          apiKey: key, model: model ?? 'nvidia/nemotron-3-super-120b-a12b:free');
     case 'groq':
       final key = Platform.environment['GROQ_API_KEY'];
       if (key == null || key.isEmpty) {
@@ -103,6 +103,13 @@ Future<void> main(List<String> args) async {
     if (!result.isUsable) {
       failed++;
       problems.add('$id: $result');
+      // Quando finisce il limite giornaliero non ha senso continuare:
+      // sarebbero venti righe identiche che nascondono i problemi veri.
+      if ((result.detail ?? '').contains('free-models-per-day')) {
+        stdout.writeln('\n!! limite giornaliero del piano gratuito esaurito '
+            '(50 richieste). Mi fermo dopo \$done avvisi.');
+        break;
+      }
       continue;
     }
 

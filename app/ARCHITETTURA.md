@@ -63,7 +63,7 @@ smentiscono.
 | `sources/alerts_source.dart` | fatto, 4 test su feed reale |
 | `sources/variazioni_source.dart` | fatto, 5 test su pagina reale |
 | `pipeline/line_resolver.dart` | fatto, 5 test — copertura 98,4% |
-| `llm/` (3 file) | fatto — fornitore scambiabile |
+| `llm/` | fatto — misurato su 34 avvisi reali |
 | `pipeline/extractor.dart` | fatto, 11 test + banco di prova |
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |

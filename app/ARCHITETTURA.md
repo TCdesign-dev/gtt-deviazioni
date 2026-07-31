@@ -55,15 +55,27 @@ smentiscono.
 | `geo/projection.dart` | fatto, 4 test |
 | `geo/geometry.dart` | fatto, 21 test |
 | `geo/polyline.dart` | fatto, 3 test |
-| `models/` | da fare |
-| `gtfs/` | da fare |
-| `sources/` | da fare |
-| `pipeline/` | da fare |
+| `models/transit.dart` | fatto |
+| `models/notice.dart` | fatto |
+| `gtfs/csv.dart` | fatto, 6 test |
+| `gtfs/gtfs_parser.dart` | fatto, 6 test sul GTFS vero |
+| `net/gtt_http.dart` | fatto |
+| `sources/alerts_source.dart` | fatto, 4 test su feed reale |
+| `sources/variazioni_source.dart` | fatto, 5 test su pagina reale |
+| `pipeline/line_resolver.dart` | fatto, 5 test — copertura 98,4% |
+| `pipeline/extractor.dart` | da fare |
+| `pipeline/geocoder.dart` | da fare |
+| `pipeline/route_builder.dart` | da fare |
+| `pipeline/stop_impact.dart` | da fare |
 | `ui/` | da fare |
 
 ```bash
 flutter test
 ```
+
+I test sulle fonti girano **offline su dati veri**: la pagina e il feed di
+GTT del 31/07/2026 sono salvati in `test/fixtures/`. Quelli sul GTFS si
+saltano da soli se i file non sono estratti in `data/gtfs/`.
 
 ## Due cose imparate scrivendo i test
 

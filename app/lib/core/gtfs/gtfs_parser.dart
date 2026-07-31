@@ -34,8 +34,25 @@ class GtfsParser {
     'stop_times.txt',
   ];
 
+  /// Tutti i nomi brevi presenti nel feed. Serve a caricare l'intera rete
+  /// quando interessa solo risolvere i nomi delle linee.
+  Future<List<String>> allShortNames() async {
+    var cols = <String, int>{};
+    final out = <String>[];
+    await for (final row in _rows('routes.txt', (h) => cols = Csv.header(h))) {
+      final s = Csv.field(row, cols, 'route_short_name');
+      if (s != null) out.add(s);
+    }
+    return out;
+  }
+
   /// [shortNames] sono i nomi come li usa la gente: "55", "4", "STAR 1".
-  Future<GtfsIndex> build(List<String> shortNames) async {
+  ///
+  /// Con [withStops] a false si salta la lettura di `stop_times.txt`, che
+  /// e' l'unica parte lenta (140 MB). Utile quando servono solo linee e
+  /// geometrie, per esempio per risolvere il nome di una linea.
+  Future<GtfsIndex> build(List<String> shortNames,
+      {bool withStops = true}) async {
     final missing = _files
         .where((f) => !File('${directory.path}/$f').existsSync())
         .toList();
@@ -62,8 +79,11 @@ class GtfsParser {
     _report('lettura fermate', 0.5);
     final stops = await _readStops();
 
-    _report('lettura orari', 0.6);
-    final stopSeq = await _readStopTimes(trips.representativeTrips);
+    var stopSeq = <String, List<String>>{};
+    if (withStops) {
+      _report('lettura orari', 0.6);
+      stopSeq = await _readStopTimes(trips.representativeTrips);
+    }
 
     _report('composizione', 0.95);
     final shapes = <String, List<RouteShape>>{};

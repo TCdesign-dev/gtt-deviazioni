@@ -1,0 +1,7 @@
+# Fase 0 — validazione fonti e snapshot GTFS.
+# Versioni fissate a quelle verificate il 31/07/2026 su Python 3.12.
+requests==2.34.2
+gtfs-realtime-bindings==2.2.0
+beautifulsoup4==4.15.0
+lxml==6.1.1
+polyline==2.0.4

@@ -140,10 +140,13 @@ class VehicleWatch {
   /// su una variante diversa, sembrerebbe altrimenti "fuori rotta" — ed e'
   /// esattamente il falso positivo che §5.3.2 mette in guardia dal
   /// produrre.
+  /// [onProgress] riceve i campioni fatti e le tracce raccolte finora.
+  /// Le tracce, non un conteggio: servono a disegnare i mezzi sulla mappa
+  /// mentre l'osservazione e' ancora in corso.
   Future<WatchResult> watch({
     required TransitLine line,
     required List<RouteShape> shapes,
-    void Function(int samples, int vehicles)? onProgress,
+    void Function(int samples, List<VehicleTrack> tracks)? onProgress,
   }) async {
     final started = DateTime.now();
     final tracks = <String, VehicleTrack>{};
@@ -181,7 +184,7 @@ class VehicleWatch {
         }
       }
 
-      onProgress?.call(samples, tracks.length);
+      onProgress?.call(samples, tracks.values.toList(growable: false));
 
       if (_enough(tracks.values)) break;
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/deviation_service.dart';
 import '../core/pipeline/stop_impact.dart';
+import '../core/pipeline/vehicle_watch.dart';
 import 'line_map.dart';
 import 'live_watch_card.dart';
 
@@ -11,13 +12,65 @@ import 'live_watch_card.dart';
 /// domanda vera; poi la mappa, che serve a confermare; e in fondo sempre
 /// il testo originale di GTT, cosi' se il sistema sbaglia il dato grezzo
 /// resta a disposizione (§6.2).
-class LineScreen extends StatelessWidget {
+class LineScreen extends StatefulWidget {
   const LineScreen({required this.status, super.key});
 
   final LineStatus status;
 
   @override
+  State<LineScreen> createState() => _LineScreenState();
+}
+
+class _LineScreenState extends State<LineScreen> {
+  // Lo stato dell'osservazione sta qui e non nella scheda, perche' serve
+  // anche alla mappa: i mezzi si disegnano mentre si guardano.
+  bool _running = false;
+  int _samples = 0;
+  List<VehicleTrack> _liveTracks = const [];
+  WatchResult? _watchResult;
+  String? _watchError;
+  WatchWindow _window = WatchWindow.media;
+
+  Future<void> _startWatch() async {
+    setState(() {
+      _running = true;
+      _watchResult = null;
+      _watchError = null;
+      _samples = 0;
+      _liveTracks = const [];
+    });
+
+    try {
+      final result = await VehicleWatch(maxDuration: _window.duration).watch(
+        line: widget.status.line,
+        shapes: widget.status.allShapes.isNotEmpty
+            ? widget.status.allShapes
+            : [widget.status.shape],
+        onProgress: (samples, tracks) {
+          if (mounted) {
+            setState(() {
+              _samples = samples;
+              _liveTracks = tracks;
+            });
+          }
+        },
+      );
+      if (mounted) {
+        setState(() {
+          _watchResult = result;
+          _liveTracks = result.tracks;
+        });
+      }
+    } on Object catch (e) {
+      if (mounted) setState(() => _watchError = '$e');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final status = widget.status;
     return Scaffold(
       appBar: AppBar(
         title: Text('Linea ${status.line.shortName}'),
@@ -39,8 +92,17 @@ class LineScreen extends StatelessWidget {
         children: [
           // La mappa sta in cima e c'e' SEMPRE: vedere dove passa la linea
           // serve anche quando la deviazione non si e' potuta ricostruire.
-          LineMap(status: status),
-          LiveWatchCard(status: status),
+          LineMap(status: status, vehicles: _liveTracks),
+          LiveWatchCard(
+            running: _running,
+            samples: _samples,
+            liveTracks: _liveTracks,
+            result: _watchResult,
+            error: _watchError,
+            window: _window,
+            onStart: _startWatch,
+            onWindowChanged: (w) => setState(() => _window = w),
+          ),
           if (status.reports.isEmpty)
             const Padding(
               padding: EdgeInsets.all(32),

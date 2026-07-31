@@ -3,26 +3,47 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../core/deviation_service.dart';
-import '../core/geo/projection.dart' as geo;
+import '../core/models/transit.dart';
 import '../core/pipeline/stop_impact.dart';
+import '../core/pipeline/vehicle_watch.dart';
 
-/// La mappa della linea: percorso normale e, sopra, le deviazioni.
+/// La mappa della linea: percorso normale, deviazioni, e le fermate.
 ///
 /// Si mostra SEMPRE, anche quando nessuna deviazione e' stata ricostruita.
-/// Vedere dove passa la linea e' utile comunque, e nasconderla proprio
-/// quando il testo non si e' capito lascia l'utente senza nulla in mano
-/// nel momento peggiore.
+/// Vedere dove passa la linea e dove si sale e' utile comunque, e
+/// nasconderla proprio quando il testo non si e' capito lascia l'utente
+/// senza nulla in mano nel momento peggiore.
 ///
 /// Convenzioni grafiche dalla specifica §6.2: percorso normale sottile e
 /// grigio, tratto deviato rosso e spesso, fermate saltate cerchiate.
-class LineMap extends StatelessWidget {
-  const LineMap({required this.status, super.key, this.height = 260});
+class LineMap extends StatefulWidget {
+  const LineMap({
+    required this.status,
+    super.key,
+    this.height = 280,
+    this.vehicles = const [],
+  });
 
   final LineStatus status;
   final double height;
 
+  /// I mezzi osservati adesso, se un'osservazione e' in corso o appena
+  /// conclusa. Si disegnano sopra tutto il resto: sono la cosa che si
+  /// muove, ed e' quella che si guarda.
+  final List<VehicleTrack> vehicles;
+
+  @override
+  State<LineMap> createState() => _LineMapState();
+}
+
+class _LineMapState extends State<LineMap> {
+  /// La fermata toccata. Dei pallini muti non servono a niente: uno tocca
+  /// per sapere COME SI CHIAMA quella fermata.
+  ({TransitStop stop, StopImpact? impact})? _selected;
+
   @override
   Widget build(BuildContext context) {
+    final status = widget.status;
     final official = status.shape.points
         .map((p) => LatLng(p.lat, p.lon))
         .toList(growable: false);
@@ -35,16 +56,22 @@ class LineMap extends StatelessWidget {
             .toList(growable: false))
         .toList();
 
-    final skipped = status.allSkippedStops;
+    // Le fermate saltate hanno la precedenza: se una fermata e' saltata
+    // non va disegnata anche come servita.
+    final skipped = {
+      for (final s in status.allSkippedStops) s.stop.id: s,
+    };
+    final served = status.shape.stops
+        .where((s) => !skipped.containsKey(s.id))
+        .toList(growable: false);
 
-    // Si inquadra la deviazione se c'e', altrimenti tutta la linea.
     final bounds = LatLngBounds.fromPoints(
         deviations.isNotEmpty ? deviations.expand((d) => d).toList() : official);
 
     return Column(
       children: [
         SizedBox(
-          height: height,
+          height: widget.height,
           child: FlutterMap(
             options: MapOptions(
               initialCameraFit: CameraFit.bounds(
@@ -56,6 +83,7 @@ class LineMap extends StatelessWidget {
                     InteractiveFlag.drag |
                     InteractiveFlag.doubleTapZoom,
               ),
+              onTap: (_, _) => setState(() => _selected = null),
             ),
             children: [
               TileLayer(
@@ -77,20 +105,43 @@ class LineMap extends StatelessWidget {
                     ),
                 ],
               ),
+              // Le fermate servite: piccole e discrete, non devono coprire
+              // il percorso.
               MarkerLayer(
                 markers: [
-                  for (final s in skipped)
-                    Marker(
-                      point: LatLng(s.stop.position.lat, s.stop.position.lon),
-                      width: 18,
-                      height: 18,
-                      child: _SkippedDot(
-                          declared: s.status == StopStatus.declaredSuspended),
+                  for (final s in served)
+                    _stopMarker(
+                      stop: s,
+                      impact: null,
+                      selected: _selected?.stop.id == s.id,
                     ),
+                ],
+              ),
+              // Le saltate sopra, piu' grandi: sono quelle che contano.
+              MarkerLayer(
+                markers: [
+                  for (final entry in skipped.entries)
+                    _stopMarker(
+                      stop: entry.value.stop,
+                      impact: entry.value,
+                      selected: _selected?.stop.id == entry.key,
+                    ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
                   _endMarker(official.first, Colors.green.shade700),
                   _endMarker(official.last, Colors.blueGrey.shade700),
                 ],
               ),
+              // I mezzi, sopra a tutto.
+              if (widget.vehicles.isNotEmpty)
+                MarkerLayer(
+                  markers: [
+                    for (final t in widget.vehicles)
+                      if (t.points.isNotEmpty) _vehicleMarker(t),
+                  ],
+                ),
               const RichAttributionWidget(
                 alignment: AttributionAlignment.bottomLeft,
                 attributions: [TextSourceAttribution('OpenStreetMap')],
@@ -98,18 +149,106 @@ class LineMap extends StatelessWidget {
             ],
           ),
         ),
-        _Legend(
-          hasDeviation: deviations.isNotEmpty,
-          skippedCount: skipped.length,
-        ),
+        if (_selected != null)
+          _SelectedStopBanner(
+            stop: _selected!.stop,
+            impact: _selected!.impact,
+            onClose: () => setState(() => _selected = null),
+          )
+        else
+          _Legend(
+            hasDeviation: deviations.isNotEmpty,
+            skippedCount: skipped.length,
+            servedCount: served.length,
+            vehicleCount: widget.vehicles.length,
+          ),
       ],
+    );
+  }
+
+  Marker _stopMarker({
+    required TransitStop stop,
+    required StopImpact? impact,
+    required bool selected,
+  }) {
+    final isSkipped = impact != null;
+    final dot = isSkipped ? 20.0 : (selected ? 16.0 : 11.0);
+
+    // Il pallino visibile e' piccolo, ma il Marker di flutter_map usa le
+    // proprie dimensioni ANCHE come area sensibile al tocco: con 11 px non
+    // si prende mai. Il marcatore e' quindi grande [_tapTarget] con il
+    // pallino centrato dentro. Verificato sul simulatore: prima il tocco
+    // mancava il bersaglio quasi sempre.
+    return Marker(
+      point: LatLng(stop.position.lat, stop.position.lon),
+      width: _tapTarget,
+      height: _tapTarget,
+      child: GestureDetector(
+        onTap: () => setState(() => _selected = (stop: stop, impact: impact)),
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: Container(
+          width: dot,
+          height: dot,
+          decoration: BoxDecoration(
+            color: isSkipped
+                ? Theme.of(context).colorScheme.error
+                : Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSkipped
+                  ? Colors.white
+                  : (selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.blueGrey.shade600),
+              width: selected || isSkipped ? 3 : 2,
+            ),
+          ),
+          child: isSkipped
+              ? const Icon(Icons.close, size: 11, color: Colors.white)
+              : null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Lato dell'area toccabile di una fermata. Le linee guida Apple
+  /// chiedono almeno 44 pt; qui si sta piu' bassi perche' le fermate sono
+  /// vicine fra loro e bersagli enormi si ruberebbero i tocchi a vicenda.
+  static const _tapTarget = 34.0;
+
+  /// Un mezzo nella sua ultima posizione nota.
+  ///
+  /// Quelli fuori percorso sono rossi: e' l'informazione che si sta
+  /// cercando quando si accende l'osservazione.
+  Marker _vehicleMarker(VehicleTrack track) {
+    final last = track.points.last;
+    final off = track.isOffRoute;
+    return Marker(
+      point: LatLng(last.position.lat, last.position.lon),
+      width: 26,
+      height: 26,
+      child: Container(
+        decoration: BoxDecoration(
+          color: off
+              ? Theme.of(context).colorScheme.error
+              : Colors.blue.shade700,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: const [
+            BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(0, 1))
+          ],
+        ),
+        child: const Icon(Icons.directions_bus, size: 14, color: Colors.white),
+      ),
     );
   }
 
   static Marker _endMarker(LatLng at, Color colour) => Marker(
         point: at,
-        width: 12,
-        height: 12,
+        width: 14,
+        height: 14,
         child: Container(
           decoration: BoxDecoration(
             color: colour,
@@ -118,39 +257,85 @@ class LineMap extends StatelessWidget {
           ),
         ),
       );
+}
 
-  static LatLng centreOf(List<geo.GeoPoint> pts) {
-    var lat = 0.0, lon = 0.0;
-    for (final p in pts) {
-      lat += p.lat;
-      lon += p.lon;
-    }
-    return LatLng(lat / pts.length, lon / pts.length);
+/// Cosa si e' toccato. Sostituisce la legenda mentre e' aperto: sono
+/// entrambe righe di servizio sotto la mappa, e averle insieme fa
+/// disordine.
+class _SelectedStopBanner extends StatelessWidget {
+  const _SelectedStopBanner({
+    required this.stop,
+    required this.impact,
+    required this.onClose,
+  });
+
+  final TransitStop stop;
+  final StopImpact? impact;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final skipped = impact != null;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      color: skipped
+          ? scheme.errorContainer.withValues(alpha: 0.5)
+          : scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      child: Row(
+        children: [
+          Icon(skipped ? Icons.do_not_disturb_on_outlined : Icons.place_outlined,
+              size: 18, color: skipped ? scheme.error : scheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(stop.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  skipped
+                      ? (impact!.status == StopStatus.declaredSuspended
+                          ? 'sospesa da GTT'
+                          : 'non servita durante la deviazione')
+                      : 'servita${stop.code != null ? " · fermata ${stop.code}" : ""}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (skipped)
+                  for (final alt in impact!.alternatives.take(2))
+                    Text(
+                      '→ ${alt.stop.name} · ${alt.bestKnownMeters.round()} m'
+                      '${alt.sameLine ? " (stessa linea)" : ""}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            tooltip: 'Chiudi',
+            onPressed: onClose,
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _SkippedDot extends StatelessWidget {
-  const _SkippedDot({required this.declared});
-
-  final bool declared;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.error,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: const Icon(Icons.close, size: 10, color: Colors.white),
-      );
-}
-
-/// Senza legenda due linee colorate non dicono nulla.
+/// Senza legenda pallini e linee colorate non dicono nulla.
 class _Legend extends StatelessWidget {
-  const _Legend({required this.hasDeviation, required this.skippedCount});
+  const _Legend({
+    required this.hasDeviation,
+    required this.skippedCount,
+    required this.servedCount,
+    required this.vehicleCount,
+  });
 
   final bool hasDeviation;
   final int skippedCount;
+  final int servedCount;
+  final int vehicleCount;
 
   @override
   Widget build(BuildContext context) {
@@ -158,35 +343,60 @@ class _Legend extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Wrap(
-        spacing: 16,
+        spacing: 14,
         runSpacing: 4,
         children: [
-          _item(Colors.blueGrey.withValues(alpha: 0.55), 'percorso normale',
+          _line(Colors.blueGrey.withValues(alpha: 0.55), 'percorso normale',
               style),
           if (hasDeviation)
-            _item(Colors.red.shade700, 'percorso deviato', style)
+            _line(Colors.red.shade700, 'percorso deviato', style)
           else
             Text('deviazione non ricostruita', style: style),
+          _dot(Colors.white, Colors.blueGrey.shade600,
+              '$servedCount fermate', style),
           if (skippedCount > 0)
-            _item(Theme.of(context).colorScheme.error,
-                '$skippedCount non servite', style, circle: true),
+            _dot(Theme.of(context).colorScheme.error, Colors.white,
+                '$skippedCount non servite', style),
+          if (vehicleCount > 0)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.directions_bus,
+                    size: 13, color: Colors.blue.shade700),
+                const SizedBox(width: 4),
+                Text('$vehicleCount in circolazione', style: style),
+              ],
+            ),
+          Text('tocca una fermata per il nome', style: style),
         ],
       ),
     );
   }
 
-  Widget _item(Color c, String label, TextStyle? style,
-          {bool circle = false}) =>
-      Row(
+  Widget _line(Color c, String label, TextStyle? style) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: circle ? 10 : 18,
-            height: circle ? 10 : 4,
+            width: 18,
+            height: 4,
             decoration: BoxDecoration(
-              color: c,
-              shape: circle ? BoxShape.circle : BoxShape.rectangle,
-              borderRadius: circle ? null : BorderRadius.circular(2),
+                color: c, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(width: 6),
+          Text(label, style: style),
+        ],
+      );
+
+  Widget _dot(Color fill, Color border, String label, TextStyle? style) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 11,
+            height: 11,
+            decoration: BoxDecoration(
+              color: fill,
+              shape: BoxShape.circle,
+              border: Border.all(color: border, width: 2),
             ),
           ),
           const SizedBox(width: 6),

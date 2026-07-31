@@ -1,60 +1,47 @@
 import 'package:flutter/material.dart';
 
-import '../core/deviation_service.dart';
 import '../core/pipeline/vehicle_watch.dart';
 
-/// "Guarda i mezzi adesso": osserva per qualche minuto dove sono davvero.
-///
-/// Serve a due cose che il testo di GTT non sa dire:
-/// - la deviazione annunciata e' davvero in corso?
-/// - **e' gia' finita?** GTT annuncia quasi sempre l'inizio e quasi mai la
-///   fine (§10.13), e questa e' l'unica fonte che puo' accorgersene.
-class LiveWatchCard extends StatefulWidget {
-  const LiveWatchCard({required this.status, super.key});
+/// Per quanto guardare. Finestre corte perche' qui l'utente sta davanti
+/// allo schermo: l'osservazione si ferma comunque appena ha abbastanza.
+enum WatchWindow {
+  breve(Duration(minutes: 1), '1 min'),
+  media(Duration(minutes: 3), '3 min'),
+  lunga(Duration(minutes: 5), '5 min'),
+  moltoLunga(Duration(minutes: 10), '10 min');
 
-  final LineStatus status;
+  const WatchWindow(this.duration, this.label);
 
-  @override
-  State<LiveWatchCard> createState() => _LiveWatchCardState();
+  final Duration duration;
+  final String label;
 }
 
-class _LiveWatchCardState extends State<LiveWatchCard> {
-  bool _running = false;
-  int _samples = 0;
-  int _vehicles = 0;
-  WatchResult? _result;
-  String? _error;
+/// "Dove sono i mezzi adesso": comandi ed esito.
+///
+/// Non tiene lo stato dell'osservazione: quello sta nella schermata, che
+/// deve passarlo anche alla mappa per disegnarci sopra i mezzi. Qui c'e'
+/// solo la presentazione.
+class LiveWatchCard extends StatelessWidget {
+  const LiveWatchCard({
+    required this.running,
+    required this.samples,
+    required this.liveTracks,
+    required this.result,
+    required this.window,
+    required this.onStart,
+    required this.onWindowChanged,
+    super.key,
+    this.error,
+  });
 
-  Future<void> _start() async {
-    setState(() {
-      _running = true;
-      _result = null;
-      _error = null;
-      _samples = 0;
-      _vehicles = 0;
-    });
-
-    try {
-      final result = await VehicleWatch(
-        // Finestra corta: qui l'utente sta guardando lo schermo, non e' un
-        // processo in sottofondo. Si ferma comunque appena ha abbastanza.
-        maxDuration: const Duration(minutes: 3),
-      ).watch(
-        line: widget.status.line,
-        shapes: widget.status.allShapes.isNotEmpty
-            ? widget.status.allShapes
-            : [widget.status.shape],
-        onProgress: (s, v) {
-          if (mounted) setState(() { _samples = s; _vehicles = v; });
-        },
-      );
-      if (mounted) setState(() => _result = result);
-    } on Object catch (e) {
-      if (mounted) setState(() => _error = '$e');
-    } finally {
-      if (mounted) setState(() => _running = false);
-    }
-  }
+  final bool running;
+  final int samples;
+  final List<VehicleTrack> liveTracks;
+  final WatchResult? result;
+  final String? error;
+  final WatchWindow window;
+  final VoidCallback onStart;
+  final ValueChanged<WatchWindow> onWindowChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -75,30 +62,52 @@ class _LiveWatchCardState extends State<LiveWatchCard> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Guardo le posizioni reali per qualche minuto. Serve a capire '
-              'se la deviazione è in corso o se è già finita — GTT la fine '
-              'non la annuncia quasi mai.',
+              'Guardo le posizioni reali e le disegno sulla mappa. Serve a '
+              'capire se la deviazione è in corso o se è già finita — GTT '
+              'la fine non la annuncia quasi mai.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            if (_running)
-              _Progress(samples: _samples, vehicles: _vehicles)
-            else if (_error != null)
-              Text(_error!,
+
+            // La durata si sceglie prima, e resta visibile: sapere per
+            // quanto si sta guardando fa capire quanto aspettare.
+            Text('Per quanto guardare',
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final w in WatchWindow.values)
+                  ChoiceChip(
+                    label: Text(w.label),
+                    selected: window == w,
+                    onSelected: running ? null : (_) => onWindowChanged(w),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            if (running)
+              _Progress(samples: samples, tracks: liveTracks)
+            else if (error != null)
+              Text(error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error))
-            else if (_result != null)
-              _Outcome(result: _result!)
+            else if (result != null)
+              _Outcome(result: result!)
             else
               FilledButton.tonalIcon(
-                onPressed: _start,
+                onPressed: onStart,
                 icon: const Icon(Icons.visibility_outlined),
                 label: const Text('Guarda adesso'),
               ),
-            if (!_running && (_result != null || _error != null))
+
+            if (!running && (result != null || error != null))
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: _start,
+                  onPressed: onStart,
                   child: const Text('Guarda di nuovo'),
                 ),
               ),
@@ -110,26 +119,30 @@ class _LiveWatchCardState extends State<LiveWatchCard> {
 }
 
 class _Progress extends StatelessWidget {
-  const _Progress({required this.samples, required this.vehicles});
+  const _Progress({required this.samples, required this.tracks});
 
   final int samples;
-  final int vehicles;
+  final List<VehicleTrack> tracks;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const LinearProgressIndicator(),
-          const SizedBox(height: 8),
-          Text(
-            vehicles == 0
-                ? 'sto guardando… ($samples ${samples == 1 ? "controllo" : "controlli"})'
-                : '$vehicles ${vehicles == 1 ? "mezzo" : "mezzi"} '
-                    'in vista, continuo a seguirli…',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final off = tracks.where((t) => t.isOffRoute).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LinearProgressIndicator(),
+        const SizedBox(height: 8),
+        Text(
+          tracks.isEmpty
+              ? 'sto guardando… ($samples ${samples == 1 ? "controllo" : "controlli"})'
+              : '${tracks.length} ${tracks.length == 1 ? "mezzo" : "mezzi"} '
+                  'sulla mappa'
+                  '${off > 0 ? ", di cui $off fuori percorso" : ""}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
 }
 
 class _Outcome extends StatelessWidget {
@@ -141,7 +154,10 @@ class _Outcome extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final (Color colour, IconData icon) = switch (result.outcome) {
-      WatchOutcome.tuttiSulPercorso => (Colors.green.shade700, Icons.check_circle_outline),
+      WatchOutcome.tuttiSulPercorso => (
+          Colors.green.shade700,
+          Icons.check_circle_outline
+        ),
       WatchOutcome.fuoriPercorso => (scheme.error, Icons.alt_route),
       WatchOutcome.nessunMezzo => (scheme.outline, Icons.bedtime_outlined),
       WatchOutcome.feedSpento => (scheme.outline, Icons.cloud_off_outlined),
@@ -158,7 +174,8 @@ class _Outcome extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(result.summary,
-                  style: TextStyle(color: colour, fontWeight: FontWeight.w600)),
+                  style:
+                      TextStyle(color: colour, fontWeight: FontWeight.w600)),
             ),
           ],
         ),

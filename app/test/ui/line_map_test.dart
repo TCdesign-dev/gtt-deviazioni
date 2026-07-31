@@ -6,6 +6,8 @@ import 'package:gtt_deviazioni/core/geo/projection.dart';
 import 'package:gtt_deviazioni/core/models/notice.dart';
 import 'package:gtt_deviazioni/core/models/transit.dart';
 import 'package:gtt_deviazioni/core/pipeline/stop_impact.dart';
+import 'package:gtt_deviazioni/core/pipeline/vehicle_watch.dart';
+import 'package:gtt_deviazioni/core/sources/vehicles_source.dart';
 import 'package:gtt_deviazioni/ui/line_map.dart';
 
 /// La mappa e' il pezzo che l'utente guarda per primo. Va verificata anche
@@ -63,10 +65,23 @@ void main() {
         ],
       );
 
-  Future<void> pump(WidgetTester tester, LineStatus s) async {
+  Future<void> pump(WidgetTester tester, LineStatus s,
+      {List<VehicleTrack> vehicles = const []}) async {
     await tester.pumpWidget(MaterialApp(
-        home: Scaffold(body: LineMap(status: s))));
+        home: Scaffold(body: LineMap(status: s, vehicles: vehicles))));
     await tester.pump();
+  }
+
+  VehicleTrack track(String id, double lat, double lon, {int offPoints = 0}) {
+    final t = VehicleTrack(id)
+      ..points.add(VehicleObservation(
+        vehicleId: id,
+        routeId: 'TESTU',
+        position: GeoPoint(lat, lon),
+        seenAt: DateTime(2026, 8, 1, 10),
+      ))
+      ..offRoutePoints = offPoints;
+    return t;
   }
 
   testWidgets('senza deviazione disegna comunque il percorso normale',
@@ -109,7 +124,20 @@ void main() {
     expect(find.text('percorso normale'), findsOneWidget);
   });
 
-  testWidgets('le fermate non servite compaiono sulla mappa', (tester) async {
+  testWidgets('disegna TUTTE le fermate, non solo quelle saltate',
+      (tester) async {
+    await pump(tester, statusWith());
+    // Una fermata servita + due capolinea.
+    final layers = tester
+        .widgetList<MarkerLayer>(find.byType(MarkerLayer))
+        .expand((l) => l.markers)
+        .length;
+    expect(layers, equals(3));
+    expect(find.text('1 fermate'), findsOneWidget);
+  });
+
+  testWidgets('una fermata saltata non viene disegnata anche come servita',
+      (tester) async {
     await pump(
       tester,
       statusWith(
@@ -122,12 +150,41 @@ void main() {
         ],
       ),
     );
-
     expect(find.text('1 non servite'), findsOneWidget);
-    // Due estremi della linea + una fermata saltata.
-    final markers =
-        tester.widget<MarkerLayer>(find.byType(MarkerLayer)).markers;
-    expect(markers.length, equals(3));
+    // L'unica fermata e' saltata: niente pallino "servita" duplicato.
+    expect(find.text('0 fermate'), findsOneWidget);
+    final total = tester
+        .widgetList<MarkerLayer>(find.byType(MarkerLayer))
+        .expand((l) => l.markers)
+        .length;
+    expect(total, equals(3), reason: 'una saltata + due capolinea');
+  });
+
+  testWidgets('toccando una fermata compare il suo nome', (tester) async {
+    // Dei pallini muti non servono: si tocca per sapere che fermata e'.
+    await pump(tester, statusWith());
+    expect(find.text('Fermata 100'), findsNothing);
+
+    await tester.tap(find.byType(GestureDetector).first, warnIfMissed: false);
+    await tester.pump();
+
+    expect(find.text('Fermata 100'), findsOneWidget);
+    expect(find.textContaining('servita'), findsOneWidget);
+  });
+
+  testWidgets('il bersaglio da toccare e piu grande del pallino visibile',
+      (tester) async {
+    // Verificato sul simulatore: con un marcatore di 11 px il tocco
+    // mancava la fermata quasi sempre. Il pallino resta piccolo per non
+    // coprire il percorso, l'area sensibile no.
+    await pump(tester, statusWith());
+    final marker = tester
+        .widgetList<MarkerLayer>(find.byType(MarkerLayer))
+        .expand((l) => l.markers)
+        .first;
+    expect(marker.width, greaterThanOrEqualTo(30),
+        reason: 'un bersaglio da 11 px non si prende su un telefono');
+    expect(marker.height, equals(marker.width));
   });
 
   testWidgets('una geometria degenere non fa cadere la schermata',
@@ -146,5 +203,44 @@ void main() {
     );
     await pump(tester, degenere);
     expect(find.byType(FlutterMap), findsNothing);
+  });
+
+  testWidgets('i mezzi osservati compaiono sulla mappa', (tester) async {
+    await pump(tester, statusWith(), vehicles: [
+      track('A', 45.0700, 7.6700),
+      track('B', 45.0700, 7.6800),
+    ]);
+
+    expect(find.byIcon(Icons.directions_bus), findsNWidgets(2 + 1),
+        reason: 'due mezzi sulla mappa piu quello della legenda');
+    expect(find.text('2 in circolazione'), findsOneWidget);
+  });
+
+  testWidgets('un mezzo fuori percorso si distingue da uno regolare',
+      (tester) async {
+    await pump(tester, statusWith(), vehicles: [
+      track('A', 45.0700, 7.6700),
+      track('B', 45.0670, 7.6800, offPoints: 3),
+    ]);
+
+    // Il colore e' l'informazione: rosso = sta deviando.
+    final containers = tester
+        .widgetList<Container>(find.ancestor(
+            of: find.byIcon(Icons.directions_bus),
+            matching: find.byType(Container)))
+        .toList();
+    final colours = containers
+        .map((c) => (c.decoration as BoxDecoration?)?.color)
+        .whereType<Color>()
+        .toSet();
+    expect(colours.length, greaterThanOrEqualTo(2),
+        reason: 'i due mezzi non devono avere lo stesso colore');
+  });
+
+  testWidgets('senza osservazione in corso non si disegna nessun mezzo',
+      (tester) async {
+    await pump(tester, statusWith());
+    expect(find.byIcon(Icons.directions_bus), findsNothing);
+    expect(find.textContaining('in circolazione'), findsNothing);
   });
 }

@@ -5,8 +5,9 @@
 // ../tests/fixtures/annotations.json e sono state annotate leggendo il
 // testo, non generandolo.
 //
-//   GEMINI_API_KEY=... dart run tool/eval_extractor.dart
-//   OPENROUTER_API_KEY=... dart run tool/eval_extractor.dart --provider openrouter --model anthropic/claude-haiku-4.5
+//   OPENROUTER_API_KEY=... dart run tool/eval_extractor.dart --provider openrouter
+//   OPENROUTER_API_KEY=... dart run tool/eval_extractor.dart --provider openrouter --model openai/gpt-oss-20b:free
+//   GEMINI_API_KEY=... dart run tool/eval_extractor.dart --provider gemini
 //
 // Attenzione: le annotazioni di riferimento le ha prodotte un LLM e vanno
 // riviste a mano. Finche' non lo sono, questo misura la COERENZA fra due
@@ -17,7 +18,7 @@ import 'dart:io';
 
 import 'package:gtt_deviazioni/core/llm/gemini_client.dart';
 import 'package:gtt_deviazioni/core/llm/llm_client.dart';
-import 'package:gtt_deviazioni/core/llm/openrouter_client.dart';
+import 'package:gtt_deviazioni/core/llm/openai_compatible_client.dart';
 import 'package:gtt_deviazioni/core/models/notice.dart';
 import 'package:gtt_deviazioni/core/pipeline/extractor.dart';
 
@@ -27,21 +28,33 @@ Future<void> main(List<String> args) async {
   final limit = int.tryParse(_arg(args, '--limit') ?? '') ?? 999;
 
   final LlmClient llm;
-  if (provider == 'openrouter') {
-    final key = Platform.environment['OPENROUTER_API_KEY'];
-    if (key == null || key.isEmpty) {
-      stderr.writeln('manca OPENROUTER_API_KEY');
-      exit(1);
-    }
-    llm = OpenRouterClient(
-        apiKey: key, model: model ?? 'google/gemini-flash-1.5');
-  } else {
-    final key = Platform.environment['GEMINI_API_KEY'];
-    if (key == null || key.isEmpty) {
-      stderr.writeln('manca GEMINI_API_KEY');
-      exit(1);
-    }
-    llm = GeminiClient(apiKey: key, model: model ?? 'gemini-flash-latest');
+  switch (provider) {
+    case 'ollama':
+      // Gratuito, locale, nessuna chiave.
+      llm = OpenAiCompatibleClient.ollama(model: model ?? 'mistral');
+    case 'openrouter':
+      final key = Platform.environment['OPENROUTER_API_KEY'];
+      if (key == null || key.isEmpty) {
+        stderr.writeln('manca OPENROUTER_API_KEY');
+        exit(1);
+      }
+      llm = OpenAiCompatibleClient.openRouter(
+          apiKey: key, model: model ?? 'google/gemma-4-31b-it:free');
+    case 'groq':
+      final key = Platform.environment['GROQ_API_KEY'];
+      if (key == null || key.isEmpty) {
+        stderr.writeln('manca GROQ_API_KEY');
+        exit(1);
+      }
+      llm = OpenAiCompatibleClient.groq(
+          apiKey: key, model: model ?? 'llama-3.3-70b-versatile');
+    default:
+      final key = Platform.environment['GEMINI_API_KEY'];
+      if (key == null || key.isEmpty) {
+        stderr.writeln('manca GEMINI_API_KEY');
+        exit(1);
+      }
+      llm = GeminiClient(apiKey: key, model: model ?? 'gemini-flash-latest');
   }
 
   final fixtures = File('../tests/fixtures/notices.json');

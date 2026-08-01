@@ -5,6 +5,7 @@ import '../geo/geometry.dart';
 import '../geo/projection.dart';
 import '../models/transit.dart';
 import '../sources/vehicles_source.dart';
+import 'route_excursion.dart';
 
 /// Cosa dicono i mezzi.
 enum WatchOutcome {
@@ -64,6 +65,7 @@ class WatchResult {
     required this.observed,
     required this.samples,
     required this.enoughVehicles,
+    this.excursions = const [],
   });
 
   final WatchOutcome outcome;
@@ -77,6 +79,13 @@ class WatchResult {
   /// al capolinea o avere il GPS ballerino. Non cambia l'esito, ma va
   /// detto — "l'ho visto su un mezzo solo" e' un'informazione.
   final bool enoughVehicles;
+
+  /// Dove i mezzi hanno davvero lasciato il percorso e dove ci sono
+  /// tornati. Vuoto se nessuno e' uscito.
+  final List<RouteExcursion> excursions;
+
+  /// Su cosa i mezzi sono d'accordo. null se nessuno e' uscito.
+  ExcursionConsensus? get consensus => ExcursionConsensus.from(excursions);
 
   int get vehiclesSeen => tracks.length;
   List<VehicleTrack> get offRoute =>
@@ -215,12 +224,30 @@ class VehicleWatch {
       if (await _sleepUnlessStopped(pollInterval, shouldStop)) break;
     }
 
+    // Le escursioni si calcolano sul percorso PRINCIPALE, non su tutte le
+    // varianti: "dove esce e dove rientra" ha senso solo rispetto a un
+    // percorso solo, e le posizioni lungo percorsi diversi non si possono
+    // confrontare fra loro.
+    final principale = routes.isEmpty ? const <Point>[] : routes.first;
+    final escursioni = <RouteExcursion>[];
+    if (principale.length > 1) {
+      for (final t in tracks.values) {
+        escursioni.addAll(RouteExcursion.detect(
+          track: t,
+          officialRoute: principale,
+          allRoutes: routes,
+          offRouteMeters: offRouteMeters,
+        ));
+      }
+    }
+
     return WatchResult(
       outcome: _classify(tracks.values, feedWasOff: feedWasOff),
       tracks: tracks.values.toList(growable: false),
       observed: DateTime.now().difference(started),
       samples: samples,
       enoughVehicles: _enough(tracks.values),
+      excursions: escursioni,
     );
   }
 

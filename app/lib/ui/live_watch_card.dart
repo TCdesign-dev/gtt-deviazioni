@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/models/transit.dart';
+import '../core/pipeline/route_excursion.dart';
 import '../core/pipeline/vehicle_watch.dart';
 
 /// Per quanto guardare.
@@ -38,6 +40,7 @@ class LiveWatchCard extends StatelessWidget {
     required this.liveTracks,
     required this.result,
     required this.window,
+    required this.shape,
     required this.onStart,
     required this.onStop,
     required this.onWindowChanged,
@@ -51,6 +54,10 @@ class LiveWatchCard extends StatelessWidget {
   final WatchResult? result;
   final String? error;
   final WatchWindow window;
+
+  /// Il percorso principale: serve a dire "escono dopo Sabotino" invece
+  /// di "escono al metro 1420".
+  final RouteShape shape;
   final VoidCallback onStart;
   final VoidCallback onStop;
   final ValueChanged<WatchWindow> onWindowChanged;
@@ -119,7 +126,7 @@ class LiveWatchCard extends StatelessWidget {
               Text(error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error))
             else if (result != null)
-              _Outcome(result: result!)
+              _Outcome(result: result!, shape: shape)
             else
               FilledButton.tonalIcon(
                 onPressed: onStart,
@@ -181,9 +188,10 @@ String _durata(Duration d) {
 }
 
 class _Outcome extends StatelessWidget {
-  const _Outcome({required this.result});
+  const _Outcome({required this.result, required this.shape});
 
   final WatchResult result;
+  final RouteShape shape;
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +222,10 @@ class _Outcome extends StatelessWidget {
             ),
           ],
         ),
+        // Dove escono e dove rientrano, misurato sui mezzi veri. E' la
+        // sola cosa in tutta l'app che non viene da un testo di GTT.
+        if (result.consensus != null)
+          _Osservato(consenso: result.consensus!, shape: shape),
         // Quando i mezzi seguono il percorso normale ma GTT dichiara ancora
         // una deviazione, e' l'indizio che sia finita. Non lo si afferma:
         // lo si suggerisce, perche' due mezzi non sono una certezza.
@@ -249,6 +261,72 @@ class _Outcome extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "Escono dopo Sabotino e rientrano a San Paolo."
+///
+/// E' l'informazione piu' solida che il sistema possa dare su una
+/// deviazione: non e' dedotta da come GTT ha scritto l'avviso, e' quello
+/// che i mezzi hanno fatto mentre li guardavamo.
+class _Osservato extends StatelessWidget {
+  const _Osservato({required this.consenso, required this.shape});
+
+  final ExcursionConsensus consenso;
+  final RouteShape shape;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final esce = shape.stopNearestAlong(consenso.detachAlongMeters);
+    final rientra = consenso.rejoinAlongMeters == null
+        ? null
+        : shape.stopNearestAlong(consenso.rejoinAlongMeters!);
+
+    final frase = StringBuffer('Lasciano il percorso normale');
+    if (esce != null) frase.write(' all\'altezza di ${esce.name}');
+    if (rientra != null) {
+      frase.write(' e rientrano a ${rientra.name}');
+    } else {
+      frase.write('. Non li ho ancora visti rientrare');
+    }
+    frase.write('.');
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.route_outlined, size: 17, color: Colors.purple.shade700),
+              const SizedBox(width: 7),
+              Text('Visto sui mezzi',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.purple.shade700)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(frase.toString()),
+          const SizedBox(height: 4),
+          Text(
+            consenso.isSolid
+                ? '${consenso.vehicles} mezzi hanno fatto la stessa cosa.'
+                // Un mezzo solo puo' essere un guasto o un rientro in
+                // deposito: va detto, non nascosto.
+                : 'Un mezzo solo: potrebbe essere un caso isolato.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: consenso.isSolid ? null : scheme.outline),
+          ),
+        ],
+      ),
     );
   }
 }

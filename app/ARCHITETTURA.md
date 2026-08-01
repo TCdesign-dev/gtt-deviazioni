@@ -77,7 +77,8 @@ smentiscono.
 | `pipeline/stop_impact.dart` | fatto, 18 test + catena dal vivo |
 | `pipeline/rejoin_inference.dart` | fatto, 7 test — misurato su 50 casi, vedi CLAUDE.md §5 |
 | `sources/vehicles_source.dart` | fatto |
-| `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
+| `pipeline/vehicle_watch.dart` | fatto, 14 test + prova dal vivo |
+| `pipeline/route_excursion.dart` | fatto, 14 test + prova dal vivo |
 | `data/` | fatto — impostazioni, orchestrazione, controllo per linea, posizione |
 | `ui/` | fatto — 3 schermate + mappa, 18 test |
 | `core/deviation_service.dart` | fatto — la facciata, 19 test |

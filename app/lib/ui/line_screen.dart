@@ -175,7 +175,11 @@ class _LineScreenState extends State<LineScreen> {
         children: [
           // La mappa sta in cima e c'e' SEMPRE: vedere dove passa la linea
           // serve anche quando la deviazione non si e' potuta ricostruire.
-          LineMap(status: status, vehicles: _liveTracks),
+          LineMap(
+            status: status,
+            vehicles: _liveTracks,
+            observed: _watchResult?.consensus,
+          ),
           LiveWatchCard(
             running: _running,
             samples: _samples,
@@ -183,6 +187,7 @@ class _LineScreenState extends State<LineScreen> {
             result: _watchResult,
             error: _watchError,
             window: _window,
+            shape: status.shape,
             onStart: _startWatch,
             onStop: () => setState(() => _stopRequested = true),
             onWindowChanged: (w) => setState(() => _window = w),

@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../core/deviation_service.dart';
 import '../core/models/transit.dart';
 import '../core/geo/projection.dart';
+import '../core/pipeline/route_excursion.dart';
 import '../core/pipeline/stop_impact.dart';
 import '../core/pipeline/vehicle_watch.dart';
 import '../data/user_location.dart';
@@ -26,6 +27,7 @@ class LineMap extends StatefulWidget {
     super.key,
     this.height = 280,
     this.vehicles = const [],
+    this.observed,
   });
 
   final LineStatus status;
@@ -35,6 +37,11 @@ class LineMap extends StatefulWidget {
   /// conclusa. Si disegnano sopra tutto il resto: sono la cosa che si
   /// muove, ed e' quella che si guarda.
   final List<VehicleTrack> vehicles;
+
+  /// Il tratto che i mezzi hanno **davvero** percorso fuori dal percorso
+  /// normale. Diverso da `deviatedGeometry`, che e' ricostruito dal testo
+  /// dell'avviso: qui non c'e' nessuna inferenza, sono posizioni GPS.
+  final ExcursionConsensus? observed;
 
   @override
   State<LineMap> createState() => _LineMapState();
@@ -168,6 +175,12 @@ class _LineMapState extends State<LineMap> {
 
     // La stessa inquadratura serve due volte: all'apertura, e ogni volta
     // che si tocca il pulsante per tornarci dopo aver girovagato.
+    final osservato = widget.observed == null
+        ? const <LatLng>[]
+        : [
+            for (final p in widget.observed!.path) LatLng(p.lat, p.lon),
+          ];
+
     final bounds = LatLngBounds.fromPoints(
       deviations.isNotEmpty
           ? deviations.expand((d) => d).toList()
@@ -308,6 +321,7 @@ class _LineMapState extends State<LineMap> {
             // annunciare un cambio di percorso. Dire "non ricostruita"
             // sarebbe una bugia — non c'era niente da ricostruire.
             onlySuspendedStops: deviations.isEmpty && skipped.isNotEmpty,
+            hasObserved: osservato.length > 1,
             skippedCount: skipped.length,
             servedCount: served.length,
             vehicleCount: widget.vehicles.length,
@@ -526,6 +540,7 @@ class _Legend extends StatelessWidget {
   const _Legend({
     required this.hasDeviation,
     required this.onlySuspendedStops,
+    required this.hasObserved,
     required this.skippedCount,
     required this.servedCount,
     required this.vehicleCount,
@@ -535,6 +550,7 @@ class _Legend extends StatelessWidget {
 
   final bool hasDeviation;
   final bool onlySuspendedStops;
+  final bool hasObserved;
   final int skippedCount;
   final int servedCount;
   final int vehicleCount;
@@ -564,8 +580,10 @@ class _Legend extends StatelessWidget {
             _line(Colors.red.shade700, 'percorso deviato', style)
           else if (onlySuspendedStops)
             Text('nessun cambio di percorso', style: style)
-          else
+          else if (!hasObserved)
             Text('deviazione non ricostruita', style: style),
+          if (hasObserved)
+            _line(Colors.purple.shade600, 'percorso visto sui mezzi', style),
           _dot(
             Colors.white,
             Colors.blueGrey.shade600,

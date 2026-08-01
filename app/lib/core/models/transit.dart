@@ -82,6 +82,28 @@ class RouteShape {
   /// principale (centinaia di corse) dalle varianti rare (poche decine).
   int tripCount;
 
+  /// La fermata piu' vicina a un punto del percorso, misurato in metri
+  /// dall'inizio.
+  ///
+  /// Serve a dire le cose come le direbbe una persona: "escono dopo
+  /// Sabotino" invece di "escono al metro 1420". Nessuno sa dove sia il
+  /// metro 1420, tutti sanno dov'e' Sabotino.
+  TransitStop? stopNearestAlong(double alongMeters) {
+    if (stops.isEmpty || points.length < 2) return null;
+    final linea = meters;
+    TransitStop? migliore;
+    var minimo = double.infinity;
+    for (final s in stops) {
+      final a = Geometry.projectOnPolyline(s.position.meters, linea).alongMeters;
+      final d = (a - alongMeters).abs();
+      if (d < minimo) {
+        minimo = d;
+        migliore = s;
+      }
+    }
+    return migliore;
+  }
+
   List<Point>? _metersCache;
 
   /// La geometria in metri, calcolata una volta sola.

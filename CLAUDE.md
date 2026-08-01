@@ -54,9 +54,11 @@ coppie su 189 avvisi), e le due copie si contraddicono sulle date. Si
 tiene il testo più completo e le date della tabella, che sono le uniche
 inserite a mano — quelle del feed sono l'ora di pubblicazione. Vale anche una richiesta LLM risparmiata a coppia.
 
-In parallelo, su richiesta: **osservazione dei mezzi** per qualche minuto,
-che dice se la deviazione è in corso o — cosa che nessun'altra fonte sa —
-se è **già finita**.
+In parallelo, su richiesta: **osservazione dei mezzi** per qualche minuto.
+Dice se la deviazione è in corso o — cosa che nessun'altra fonte sa — se è
+**già finita**. E dice **dove i mezzi escono e dove rientrano**, che è
+l'unico dato del sistema a non venire da un testo: non è dedotto da come
+GTT ha scritto l'avviso, è quello che i bus hanno fatto.
 
 **Nessun server.** GTFS e calcoli sul telefono; geocoding con Photon,
 routing con Valhalla FOSSGIS, LLM via OpenRouter. Tutti servizi pubblici.
@@ -197,6 +199,15 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **Le escursioni vanno confrontate con TUTTE le varianti, non con la
+  principale.** Visto sul campo appena scritto il rilevatore: la 65 diceva
+  «3 mezzi seguono il percorso normale» e subito sotto «lasciano il
+  percorso a Collegno». Il mezzo stava su una diramazione legittima —
+  lontano dalla variante principale, ma sulla sua. È lo stesso falso
+  positivo che `VehicleTrack.isOffRoute` evitava già; il rilevatore nuovo
+  lo aveva reintrodotto. Le posizioni si **misurano** sulla principale (o
+  non sarebbero confrontabili), ma «è fuori?» si decide sulla variante più
+  vicina.
 - **La deduzione del rientro regge sulla mediana, non sulla coda.**
   Misurato su 50 casi veri (`check_rejoin_live.dart`, senza LLM e senza
   le annotazioni): mediana 10 m, ma 75° pct 237 m e massimo 793 m. Solo
@@ -256,7 +267,7 @@ Per non fraintendere:
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 217 test, devono passare tutti
+cd app && flutter test          # 231 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
 ```
 
@@ -310,4 +321,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 217 test, 37 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 231 test, 39 commit.*

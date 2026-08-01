@@ -39,6 +39,23 @@ class AppRepository extends ChangeNotifier {
   LineStatus? statusOf(String routeId) => _statuses[routeId];
   List<LineStatus> get statuses => _statuses.values.toList(growable: false);
 
+  /// Le linee che si stanno controllando adesso.
+  ///
+  /// Il controllo di una linea sola non deve coprire la schermata: le
+  /// altre restano leggibili, e chi guarda vede girare solo la riga che
+  /// ha chiesto.
+  final Set<String> _busy = {};
+  bool isChecking(String routeId) => _busy.contains(routeId);
+  bool get isCheckingAny => _busy.isNotEmpty;
+
+  /// Quando una linea e' stata controllata l'ultima volta.
+  ///
+  /// Con il controllo per singola linea le righe non sono piu' tutte
+  /// dello stesso momento, e dire "controllate alle 14:03" sarebbe falso
+  /// per quelle che non lo sono.
+  final Map<String, DateTime> _checkedAt = {};
+  DateTime? checkedAt(String routeId) => _checkedAt[routeId];
+
   /// Scarica il GTFS se serve e costruisce l'indice per le linee scelte.
   Future<void> initialise({bool forceDownload = false}) async {
     if (settings.watchlist.isEmpty) {
@@ -119,13 +136,7 @@ class AppRepository extends ChangeNotifier {
       for (final line in index.lines.values) {
         phase = 'linea ${line.shortName}';
         notifyListeners();
-        try {
-          _statuses[line.routeId] =
-              await service.statusOf(line, allNotices: _notices);
-        } on Object catch (e) {
-          // Una linea che fallisce non deve bloccare le altre.
-          debugPrint('linea ${line.shortName}: $e');
-        }
+        await _checkOne(service, line, _notices);
       }
       lastRefresh = DateTime.now();
       state = LoadState.ready;
@@ -135,6 +146,51 @@ class AppRepository extends ChangeNotifier {
       error = _readable(e);
     }
     notifyListeners();
+  }
+
+  /// Ricontrolla UNA linea sola.
+  ///
+  /// Le richieste all'LLM sono contate — 50 gratuite al giorno, e un
+  /// avviso ne consuma una — quindi ricontrollare tutta la watchlist per
+  /// sapere di una linea sola e' uno spreco vero, non un dettaglio.
+  ///
+  /// Gli avvisi si riscaricano: sono due richieste HTTP senza chiave e
+  /// senza costo, e controllare adesso su dati di mezz'ora fa vorrebbe
+  /// dire rispondere alla domanda sbagliata.
+  Future<void> refreshLine(TransitLine line) async {
+    _service ??= _buildService();
+    final service = _service;
+    if (service == null || _busy.contains(line.routeId)) return;
+
+    _busy.add(line.routeId);
+    error = null;
+    notifyListeners();
+
+    try {
+      _notices = await service.fetchAllNotices();
+      await _checkOne(service, line, _notices);
+      lastRefresh = DateTime.now();
+      if (state != LoadState.ready) state = LoadState.ready;
+    } on Object catch (e) {
+      // Non si passa a LoadState.error: una linea che fallisce non deve
+      // cancellare dallo schermo il risultato delle altre.
+      error = _readable(e);
+    } finally {
+      _busy.remove(line.routeId);
+      notifyListeners();
+    }
+  }
+
+  Future<void> _checkOne(
+      DeviationService service, TransitLine line, List<RawNotice> notices) async {
+    try {
+      _statuses[line.routeId] =
+          await service.statusOf(line, allNotices: notices);
+      _checkedAt[line.routeId] = DateTime.now();
+    } on Object catch (e) {
+      // Una linea che fallisce non deve bloccare le altre.
+      debugPrint('linea ${line.shortName}: $e');
+    }
   }
 
   Future<void> addLine(String line) async {

@@ -35,9 +35,13 @@ class HomeScreen extends StatelessWidget {
           floatingActionButton: repo.state == LoadState.ready &&
                   repo.settings.watchlist.isNotEmpty
               ? FloatingActionButton.extended(
-                  onPressed: repo.refreshAll,
+                  onPressed: repo.isCheckingAny ? null : repo.refreshAll,
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Controlla'),
+                  // Da quando ogni riga ha il suo pulsante, "Controlla" da
+                  // solo non dice piu' quali.
+                  label: Text(repo.settings.watchlist.length == 1
+                      ? 'Controlla'
+                      : 'Controlla tutte'),
                 )
               : null,
         );
@@ -103,20 +107,25 @@ class HomeScreen extends StatelessWidget {
           if (repo.lastRefresh == null && repo.settings.hasApiKey)
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text('Tocca «Controlla» per interrogare GTT.'),
+              child: Text('Tocca «Controlla tutte», oppure ↻ su una linea '
+                  'sola.'),
             ),
           for (final line in lines)
             _LineTile(
               shortName: line.shortName,
               longName: line.longName,
               status: repo.statusOf(line.routeId),
+              checking: repo.isChecking(line.routeId),
+              onCheck: () => repo.refreshLine(line),
               onTap: repo.statusOf(line.routeId) == null
                   ? null
                   : () => Navigator.push(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (_) =>
-                              LineScreen(status: repo.statusOf(line.routeId)!),
+                          builder: (_) => LineScreen(
+                            repo: repo,
+                            line: line,
+                          ),
                         ),
                       ),
             ),
@@ -130,6 +139,8 @@ class _LineTile extends StatelessWidget {
   const _LineTile({
     required this.shortName,
     required this.status,
+    required this.checking,
+    required this.onCheck,
     this.longName,
     this.onTap,
   });
@@ -137,6 +148,8 @@ class _LineTile extends StatelessWidget {
   final String shortName;
   final String? longName;
   final LineStatus? status;
+  final bool checking;
+  final VoidCallback onCheck;
   final VoidCallback? onTap;
 
   @override
@@ -197,7 +210,32 @@ class _LineTile extends StatelessWidget {
           ),
         ],
       ),
-      trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Controllare una linea sola: e' la cosa che si fa piu' spesso,
+          // ed e' quella che consuma meno richieste.
+          if (checking)
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Controlla solo la $shortName',
+              onPressed: onCheck,
+            ),
+          if (onTap != null) const Icon(Icons.chevron_right),
+        ],
+      ),
     );
   }
 }

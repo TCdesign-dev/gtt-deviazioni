@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/deviation_service.dart';
+import '../core/models/transit.dart';
+import '../data/app_repository.dart';
 import '../core/pipeline/stop_impact.dart';
 import '../core/pipeline/vehicle_watch.dart';
 import 'line_map.dart';
@@ -13,9 +15,10 @@ import 'live_watch_card.dart';
 /// il testo originale di GTT, cosi' se il sistema sbaglia il dato grezzo
 /// resta a disposizione (§6.2).
 class LineScreen extends StatefulWidget {
-  const LineScreen({required this.status, super.key});
+  const LineScreen({required this.repo, required this.line, super.key});
 
-  final LineStatus status;
+  final AppRepository repo;
+  final TransitLine line;
 
   @override
   State<LineScreen> createState() => _LineScreenState();
@@ -41,11 +44,11 @@ class _LineScreenState extends State<LineScreen> {
     });
 
     try {
+      final status = widget.repo.statusOf(widget.line.routeId)!;
       final result = await VehicleWatch(maxDuration: _window.duration).watch(
-        line: widget.status.line,
-        shapes: widget.status.allShapes.isNotEmpty
-            ? widget.status.allShapes
-            : [widget.status.shape],
+        line: status.line,
+        shapes:
+            status.allShapes.isNotEmpty ? status.allShapes : [status.shape],
         onProgress: (samples, tracks) {
           if (mounted) {
             setState(() {
@@ -68,12 +71,53 @@ class _LineScreenState extends State<LineScreen> {
     }
   }
 
+  String get _checkedLabel {
+    final t = widget.repo.checkedAt(widget.line.routeId);
+    if (t == null) return '';
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '  ·  controllata alle $h:$m';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final status = widget.status;
+    // Si ascolta il repository perche' il controllo della singola linea
+    // avviene da qui: il risultato deve comparire senza tornare indietro.
+    return ListenableBuilder(
+      listenable: widget.repo,
+      builder: (context, _) => _content(context),
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    final status = widget.repo.statusOf(widget.line.routeId);
+    // La schermata si apre solo su una linea gia' controllata, ma toglierla
+    // dalla watchlist mentre e' aperta la lascerebbe senza dati.
+    if (status == null) return const Scaffold(body: SizedBox.shrink());
+    final checking = widget.repo.isChecking(widget.line.routeId);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Linea ${status.line.shortName}'),
+        actions: [
+          if (checking)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Ricontrolla la ${status.line.shortName}',
+              onPressed: () => widget.repo.refreshLine(widget.line),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20),
           child: Padding(
@@ -81,7 +125,10 @@ class _LineScreenState extends State<LineScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                status.shape.headsign,
+                // Con il controllo per singola linea le righe non sono
+                // piu' tutte dello stesso momento: l'ora va detta qui,
+                // dove si guardano i risultati.
+                '${status.shape.headsign}$_checkedLabel',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

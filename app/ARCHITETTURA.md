@@ -75,7 +75,7 @@ smentiscono.
 | `pipeline/rejoin_inference.dart` | fatto, 7 test + catena dal vivo |
 | `sources/vehicles_source.dart` | fatto |
 | `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
-| `data/` | fatto — impostazioni e orchestrazione |
+| `data/` | fatto — impostazioni, orchestrazione, controllo per linea |
 | `ui/` | fatto — 3 schermate + mappa, 11 test |
 | `core/deviation_service.dart` | fatto — la facciata, 15 test |
 | `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |

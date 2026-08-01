@@ -26,7 +26,9 @@ meno). L'app non li usa e non li userà: sono strumenti da banco.
 
 ## 2. Come funziona, in breve
 
-Tutto avviene **per singola linea, su richiesta**. Non si monitora la rete.
+Tutto avviene **per singola linea, su richiesta** — e si può controllare
+una linea sola senza toccare le altre, che con 50 richieste LLM al giorno
+non è un dettaglio. Non si monitora la rete.
 È questa scelta a rendere affidabile il resto: il vincolo geografico del
 geocoding è il percorso di *quella* linea.
 

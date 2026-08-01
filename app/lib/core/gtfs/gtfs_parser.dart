@@ -3,6 +3,7 @@ import 'dart:io';
 
 import '../geo/projection.dart';
 import '../models/transit.dart';
+import '../pipeline/line_resolver.dart';
 import 'csv.dart';
 
 /// Costruisce un [GtfsIndex] dai file GTFS estratti, tenendo solo le linee
@@ -60,7 +61,7 @@ class GtfsParser {
       throw GtfsParseException('file GTFS mancanti: ${missing.join(", ")}');
     }
 
-    final wanted = shortNames.map(_norm).toSet();
+    final wanted = shortNames.where((s) => s.trim().isNotEmpty).toList();
 
     _report('lettura linee', 0.05);
     final feedVersion = await _readFeedVersion();
@@ -154,20 +155,32 @@ class GtfsParser {
     return null;
   }
 
-  Future<Map<String, TransitLine>> _readRoutes(Set<String> wanted) async {
+  /// Le linee chieste, riconosciute con le STESSE regole degli avvisi.
+  ///
+  /// Si legge tutto `routes.txt` — sono poche centinaia di righe — e poi
+  /// si sceglie con [LineResolver.matchIn]. Prima il confronto era fatto
+  /// qui, a mano, con un semplice maiuscolo-senza-spazi: chi scriveva
+  /// "10N" non trovava la N10, "N8" non trovava la N08, "58 barrata" non
+  /// trovava la 58/. Le regole erano gia' scritte, ma da un'altra parte.
+  Future<Map<String, TransitLine>> _readRoutes(List<String> wanted) async {
     var cols = <String, int>{};
-    final out = <String, TransitLine>{};
+    final all = <TransitLine>[];
     await for (final row in _rows('routes.txt', (h) => cols = Csv.header(h))) {
       final short = Csv.field(row, cols, 'route_short_name');
-      if (short == null || !wanted.contains(_norm(short))) continue;
       final id = Csv.field(row, cols, 'route_id');
-      if (id == null) continue;
-      out[id] = TransitLine(
+      if (short == null || id == null) continue;
+      all.add(TransitLine(
         routeId: id,
         shortName: short,
         longName: Csv.field(row, cols, 'route_long_name'),
         color: Csv.field(row, cols, 'route_color'),
-      );
+      ));
+    }
+
+    final out = <String, TransitLine>{};
+    for (final name in wanted) {
+      final line = LineResolver.matchIn(all, name);
+      if (line != null) out[line.routeId] = line;
     }
     return out;
   }
@@ -278,7 +291,6 @@ class GtfsParser {
     };
   }
 
-  static String _norm(String s) => s.toUpperCase().replaceAll(' ', '').trim();
 }
 
 class _ShapeMeta {

@@ -209,7 +209,10 @@ class VehicleWatch {
       if (DateTime.now().difference(started) + pollInterval >= maxDuration) {
         break;
       }
-      await Future<void>.delayed(pollInterval);
+      // L'attesa fra un campione e l'altro si interrompe: dormire venti
+      // secondi filati significava che "basta cosi'" non faceva niente
+      // per un tempo che sembra un blocco.
+      if (await _sleepUnlessStopped(pollInterval, shouldStop)) break;
     }
 
     return WatchResult(
@@ -219,6 +222,32 @@ class VehicleWatch {
       samples: samples,
       enoughVehicles: _enough(tracks.values),
     );
+  }
+
+  /// Aspetta [total], ma si sveglia spesso per sentire se deve smettere.
+  ///
+  /// Restituisce true se ha smesso prima. Venti secondi di attesa senza
+  /// controlli rendevano il pulsante "basta cosi'" apparentemente rotto:
+  /// premevi e non succedeva niente, e non c'e' modo di distinguerlo da
+  /// un tocco non registrato.
+  ///
+  /// Il passo e' un compromesso: abbastanza corto da sembrare immediato,
+  /// abbastanza lungo da non svegliare il processore per niente.
+  static const _stopCheckStep = Duration(milliseconds: 200);
+
+  Future<bool> _sleepUnlessStopped(
+      Duration total, bool Function()? shouldStop) async {
+    if (shouldStop == null) {
+      await Future<void>.delayed(total);
+      return false;
+    }
+    final until = DateTime.now().add(total);
+    while (DateTime.now().isBefore(until)) {
+      if (shouldStop()) return true;
+      final left = until.difference(DateTime.now());
+      await Future<void>.delayed(left < _stopCheckStep ? left : _stopCheckStep);
+    }
+    return shouldStop();
   }
 
   /// Ci sono abbastanza mezzi con almeno due punti ciascuno perche' la

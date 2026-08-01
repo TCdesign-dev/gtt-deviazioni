@@ -131,6 +131,46 @@ void main() {
       );
     });
   });
+
+  group('La watchlist usa le stesse regole degli avvisi', () {
+    // Qui basta routes.txt: non si leggono ne' fermate ne' orari.
+    final dir = Directory('../data/gtfs');
+
+    // Il difetto: il parser confrontava i nomi a modo suo, con un
+    // maiuscolo-senza-spazi, mentre LineResolver aveva gia' le regole
+    // buone. Chi aggiungeva "10N" non vedeva comparire niente, senza
+    // nessuna spiegazione.
+    Future<List<String>> caricate(List<String> watchlist) async {
+      final index =
+          await GtfsParser(directory: dir).build(watchlist, withStops: false);
+      return index.lines.values.map((l) => l.routeId).toList()..sort();
+    }
+
+    test('"10N" carica la N10', () async {
+      // Nel GTFS la notturna e' N10, ma GTT usa anche la forma col
+      // suffisso (4N, 19N) e uno scrive per analogia.
+      expect(await caricate(['10N']), equals(['N10U']));
+    });
+
+    test('"N8" carica la N08 nonostante lo zero', () async {
+      expect(await caricate(['N8']), equals(['N08U']));
+    });
+
+    test('"58 barrata" carica la 58/', () async {
+      expect(await caricate(['58 barrata']), equals(['58BU']));
+    });
+
+    test('le forme gia giuste continuano a funzionare', () async {
+      expect(await caricate(['55', '4N', 'N10']),
+          equals(['4NU', '55U', 'N10U']));
+    });
+  },
+      // La condizione sta qui e non dentro il gruppo: `skip` si valuta
+      // prima che la chiusura giri.
+      skip: File('../data/gtfs/routes.txt').existsSync()
+          ? false
+          : 'GTFS non estratto');
+
 }
 
 double _alongMeters(dynamic shape, double lat, double lon) {

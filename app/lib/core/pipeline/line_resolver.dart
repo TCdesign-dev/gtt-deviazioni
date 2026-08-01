@@ -94,29 +94,47 @@ class LineResolver {
   }
 
   /// Risolve un singolo nome. null se non ce la fa: non tira a indovinare.
-  TransitLine? resolveOne(String token) {
+  TransitLine? resolveOne(String token) =>
+      matchIn(index.lines.values, token, aliases: aliases);
+
+  /// Le stesse regole, su una lista qualsiasi di linee.
+  ///
+  /// Esiste separata perche' serve anche a [GtfsParser], che deve
+  /// scegliere quali linee caricare PRIMA che l'indice esista — e senza
+  /// questo faceva un confronto suo, molto piu' povero: "10N" non
+  /// trovava la N10, "N8" non trovava la N08, "58 barrata" non trovava
+  /// la 58/. Due riconoscitori diversi per la stessa domanda sono un
+  /// difetto strutturale, non un dettaglio.
+  static TransitLine? matchIn(
+    Iterable<TransitLine> lines,
+    String token, {
+    Map<String, String>? aliases,
+  }) {
+    final alias = aliases ?? _defaultAliases;
     final t = token.trim();
     if (t.isEmpty) return null;
 
     // 1. E' gia' un route_id ("55U").
-    final direct = index.lines[t.toUpperCase()];
-    if (direct != null) return direct;
+    final upper = t.toUpperCase();
+    for (final l in lines) {
+      if (l.routeId.toUpperCase() == upper) return l;
+    }
 
     // 2. Nome breve, confronto normalizzato ("16 CS" == "16CS").
     final norm = _normalize(t);
-    for (final l in index.lines.values) {
+    for (final l in lines) {
       if (_normalize(l.shortName) == norm) return l;
     }
 
     // 3. Alias espliciti ("58 barrata" -> "58/").
     var candidate = norm;
-    aliases.forEach((from, to) {
+    alias.forEach((from, to) {
       if (candidate.endsWith(from)) {
         candidate = candidate.substring(0, candidate.length - from.length) + to;
       }
     });
     if (candidate != norm) {
-      for (final l in index.lines.values) {
+      for (final l in lines) {
         if (_normalize(l.shortName) == candidate) return l;
       }
     }
@@ -128,13 +146,55 @@ class LineResolver {
       final prefix = night.group(1)!;
       final digits = night.group(2)!;
       for (final pad in [digits.padLeft(2, '0'), digits.padLeft(3, '0')]) {
-        for (final l in index.lines.values) {
+        for (final l in lines) {
           if (_normalize(l.shortName) == '$prefix$pad') return l;
         }
       }
     }
 
-    return null;
+    // 5. La N sta davanti o dietro? GTT usa tutte e due le forme, e chi
+    //    scrive non puo' saperlo.
+    //
+    //    MISURATO sul GTFS: le notturne vere hanno la N DAVANTI — N04,
+    //    N08, N10, tutte "notturna, piazza Vittorio Veneto - ..." — mentre
+    //    1N, 4N, 19N, 35N, 36N sono un'altra famiglia, con la N DIETRO.
+    //    Chi cerca la N10 scrive "10N" per analogia con la 4N, e non
+    //    trovava niente.
+    //
+    //    E' l'ULTIMO tentativo, dopo lo zero-padding, perche' **N04 e 4N
+    //    sono due linee diverse e coesistono**: scambiare per primo
+    //    darebbe la linea sbagliata. Cosi' "N4" resta la notturna N04, che
+    //    e' la corrispondenza piu' stretta.
+    return _swappedN(lines, norm);
+  }
+
+  /// Cerca la stessa linea con la N dall'altra parte.
+  ///
+  /// Accetta solo se il risultato e' UNO: se lo scambio ne trovasse due
+  /// non si saprebbe quale, e indovinare e' peggio che non rispondere.
+  static TransitLine? _swappedN(Iterable<TransitLine> lines, String norm) {
+    final forms = <String>{};
+    final asPrefix = RegExp(r'^N(\d+)$').firstMatch(norm);
+    final asSuffix = RegExp(r'^(\d+)N$').firstMatch(norm);
+
+    if (asPrefix != null) {
+      final d = asPrefix.group(1)!;
+      forms.addAll(['${d}N', '${int.parse(d)}N']);
+    } else if (asSuffix != null) {
+      final d = asSuffix.group(1)!;
+      forms.addAll([
+        'N$d',
+        'N${d.padLeft(2, '0')}',
+        'N${d.padLeft(3, '0')}',
+      ]);
+    }
+    if (forms.isEmpty) return null;
+
+    final found = <String, TransitLine>{};
+    for (final l in lines) {
+      if (forms.contains(_normalize(l.shortName))) found[l.routeId] = l;
+    }
+    return found.length == 1 ? found.values.first : null;
   }
 
   /// Maiuscole, niente spazi, via le parole finali che non fanno parte del

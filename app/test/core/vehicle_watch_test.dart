@@ -209,6 +209,37 @@ void main() {
       expect(r.samples, equals(4));
     });
 
+    test('lo stop non aspetta la fine dell attesa', () async {
+      // L'attesa fra un campione e l'altro era un sonno pieno: chi
+      // premeva "basta cosi'" non vedeva succedere niente per venti
+      // secondi, che e' indistinguibile da un pulsante rotto.
+      final source = _ScriptedSource([
+        for (var i = 0; i < 20; i++)
+          [obs('A', 45.0700, 7.6700 + i * 0.0001, i * 30)],
+      ]);
+      var stop = false;
+      final t = Stopwatch()..start();
+      final r = await VehicleWatch(
+        source: source,
+        pollInterval: const Duration(seconds: 20),
+        maxDuration: const Duration(minutes: 10),
+      ).watch(
+        line: line,
+        shapes: [principale],
+        onProgress: (_, _) {
+          // Si chiede di smettere appena parte l'attesa.
+          Future<void>.delayed(const Duration(milliseconds: 40))
+              .then((_) => stop = true);
+        },
+        shouldStop: () => stop,
+      );
+      t.stop();
+
+      expect(r.samples, equals(1));
+      expect(t.elapsed, lessThan(const Duration(seconds: 2)),
+          reason: 'ha aspettato i 20 s pieni: ${t.elapsed}');
+    });
+
     test('senza abbastanza mezzi l esito lo dichiara', () async {
       final r = await run([
         [obs('A', 45.0700, 7.6700, 0)],

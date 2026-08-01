@@ -125,6 +125,35 @@ void main() {
     final available =
         dir.existsSync() && File('${dir.path}/routes.txt').existsSync();
 
+    test('la N davanti o dietro: GTT usa tutte e due le forme', () async {
+      // MISURATO sul GTFS: le notturne vere hanno la N DAVANTI (N04, N08,
+      // N10, tutte "notturna, piazza Vittorio Veneto - ..."), mentre 1N,
+      // 4N, 19N, 35N, 36N sono un'altra famiglia con la N DIETRO. Chi
+      // cerca la N10 scrive "10N" per analogia con la 4N.
+      final index = await GtfsParser(directory: dir)
+          .build(['N10', 'N08', 'N04', '4N', '19N']);
+      final r = LineResolver(index);
+
+      expect(r.resolveOne('10N')?.routeId, equals('N10U'),
+          reason: 'e il caso che non funzionava');
+      expect(r.resolveOne('N10')?.routeId, equals('N10U'));
+      expect(r.resolveOne('8N')?.routeId, equals('N08U'),
+          reason: 'scambio piu zero-padding insieme');
+
+      // La trappola: N04 e 4N sono due linee DIVERSE e coesistono.
+      // Scambiare prima di provare lo zero-padding darebbe quella
+      // sbagliata.
+      expect(r.resolveOne('4N')?.routeId, equals('4NU'));
+      expect(r.resolveOne('N4')?.routeId, equals('N04U'),
+          reason: 'lo zero-padding e piu stretto dello scambio');
+      expect(r.resolveOne('N04')?.routeId, equals('N04U'));
+
+      // Il suffisso resta il suffisso quando esiste gia'.
+      expect(r.resolveOne('19N')?.routeId, equals('19NU'));
+      expect(r.resolveOne('N19')?.routeId, equals('19NU'),
+          reason: 'N19 non esiste, 19N si: lo scambio e sicuro');
+    }, skip: available ? false : 'GTFS non estratto');
+
     test('risolve i casi difficili che la specifica segnala', () async {
       // Watchlist larga: servono le linee citate dai casi difficili.
       final index = await GtfsParser(directory: dir)

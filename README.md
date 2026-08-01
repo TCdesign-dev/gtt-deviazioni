@@ -104,7 +104,7 @@ L'output più utile, e quello che GTT non fornisce quasi mai. Le alternative
 privilegiano le fermate ancora servite dalla **stessa linea**, così da non
 richiedere un cambio di mezzo.
 
-### 🗺️ Mappa
+### 🌐 Mappa
 
 Percorso normale di entrambe le direzioni con tonalità distinte, tratto
 deviato in rosso, fermate toccabili per il nome, fermate saltate cerchiate,
@@ -131,7 +131,7 @@ watchlist per sapere di una linea sola sarebbe uno spreco misurabile.
 In fondo a ogni scheda, così che il dato grezzo resti disponibile anche
 quando il sistema sbaglia.
 
-## ⚙️ Come funziona
+## 🧩 Come funziona
 
 Il passaggio da testo a geometria è il punto in cui questi progetti si
 fermano. Un geocoder interrogato liberamente con «via Roma» restituisce
@@ -190,7 +190,7 @@ GTT. La regola è esplicita:
 > camminare l'utente ottocento metri inutilmente, e distrugge la fiducia
 > nello strumento.
 
-## 🏗️ Architettura
+## 🧱 Architettura
 
 Il sistema è organizzato attorno a un vincolo strutturale:
 
@@ -264,7 +264,7 @@ non esistono nel feed corrente, e a cui mancano sette linee.
 | 🔀 **Una variante per direzione** | Una deviazione che riguardasse solo una corsa limitata verrebbe valutata sul percorso intero |
 | 📆 **Date inaffidabili dal feed protobuf** | `active_period.start` è l'ora di pubblicazione, non l'inizio (161 casi su 161). La data giusta arriva solo dalla tabella HTML |
 
-## 🛠️ Sviluppo
+## 🧪 Sviluppo
 
 ```bash
 cd app && flutter test      # 206 test

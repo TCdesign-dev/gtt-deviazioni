@@ -70,7 +70,11 @@ class _WatchBannerState extends State<WatchBanner> {
       builder: (context, _) {
         final repo = widget.repo;
         final line = repo.watchingLine;
-        if (line == null) return widget.child;
+        // Sulla schermata della linea osservata la striscia e' di troppo:
+        // la scheda sotto dice le stesse cose e ha il suo pulsante.
+        if (line == null || repo.visibleLineRouteId == line.routeId) {
+          return widget.child;
+        }
 
         return Column(
           children: [
@@ -81,7 +85,16 @@ class _WatchBannerState extends State<WatchBanner> {
               onTap: _apri,
               onStop: repo.stopWatch,
             ),
-            Expanded(child: widget.child),
+            // La striscia ha gia' consumato la barra di stato: senza
+            // toglierla, ogni AppBar sotto la conta una seconda volta e
+            // lascia un vuoto di una sessantina di punti.
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: widget.child,
+              ),
+            ),
           ],
         );
       },

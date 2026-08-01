@@ -200,6 +200,11 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **Chi mette qualcosa sopra le schermate deve togliere il padding che
+  ha consumato.** La striscia dell'osservazione si prende la barra di
+  stato, ma ogni `AppBar` sotto continuava a spaziarsi come se fosse lei
+  in cima: una sessantina di punti di vuoto su ogni schermata. Si risolve
+  avvolgendo il figlio in `MediaQuery.removePadding(removeTop: true)`.
 - **I `Tooltip` non funzionano nel `builder` di `MaterialApp`.** Il
   `builder` avvolge il Navigator, e l'`Overlay` che i tooltip pretendono
   lo fornisce il Navigator: quindi si sta *sopra* di esso. Con `tooltip:`

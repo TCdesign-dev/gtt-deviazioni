@@ -30,6 +30,25 @@ class _LineScreenState extends State<LineScreen> {
   // la scelta della durata, che e' una preferenza di chi guarda.
   WatchWindow _window = WatchWindow.media;
 
+  @override
+  void initState() {
+    super.initState();
+    // Dopo il frame: cambiarlo durante la costruzione farebbe partire un
+    // notifyListeners mentre l'albero si sta ancora montando.
+    WidgetsBinding.instance.addPostFrameCallback(
+        (_) => widget.repo.setVisibleLine(widget.line.routeId));
+  }
+
+  @override
+  void dispose() {
+    if (widget.repo.visibleLineRouteId == widget.line.routeId) {
+      widget.repo.visibleLineRouteId = null;
+      // Niente notifyListeners qui: si sta smontando, e chi resta viene
+      // ricostruito comunque dal Navigator.
+    }
+    super.dispose();
+  }
+
   void _startWatch() =>
       widget.repo.startWatch(widget.line, _window.duration);
 

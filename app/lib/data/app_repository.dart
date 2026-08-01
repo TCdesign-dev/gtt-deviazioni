@@ -181,6 +181,20 @@ class AppRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// La linea il cui dettaglio e' aperto adesso.
+  ///
+  /// Serve alla striscia in cima: sulla schermata della linea osservata
+  /// e' di troppo, perche' li' la scheda dice gia' tutto e ha il suo
+  /// pulsante per fermare. Ripetere le stesse cose a due dita di
+  /// distanza toglie spazio e non aggiunge niente.
+  String? visibleLineRouteId;
+
+  void setVisibleLine(String? routeId) {
+    if (visibleLineRouteId == routeId) return;
+    visibleLineRouteId = routeId;
+    notifyListeners();
+  }
+
   /// La linea che si sta osservando, per aprirla da un punto qualsiasi.
   TransitLine? get watchingLine =>
       watchingRouteId == null ? null : index?.lines[watchingRouteId];

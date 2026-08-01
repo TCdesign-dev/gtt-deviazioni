@@ -45,6 +45,10 @@ class _LineMapState extends State<LineMap> {
   /// chiedi: per il resto la mappa si posiziona da sola sul percorso.
   final _map = MapController();
 
+  /// L'inquadratura che mostra tutto il percorso. La calcola `build`, e
+  /// serve al pulsante che ci riporta.
+  LatLngBounds? _routeBounds;
+
   final _location = UserLocation();
   StreamSubscription<GeoPoint>? _locationSub;
   GeoPoint? _me;
@@ -95,6 +99,19 @@ class _LineMapState extends State<LineMap> {
     _locationSub = _location.follow().listen((p) {
       if (mounted) setState(() => _me = p);
     }, onError: (_) {});
+  }
+
+  /// Torna a inquadrare tutto il percorso.
+  ///
+  /// Dopo aver seguito un mezzo o essersi centrati su di se', ritrovare la
+  /// linea intera a mano — zoom indietro e trascinamenti — e' fastidioso,
+  /// e su una linea lunga si finisce fuori senza accorgersene.
+  void _fitRoute() {
+    final b = _routeBounds;
+    if (b == null) return;
+    _map.fitCamera(
+      CameraFit.bounds(bounds: b, padding: const EdgeInsets.all(28)),
+    );
   }
 
   void _say(String message) => ScaffoldMessenger.maybeOf(
@@ -149,11 +166,14 @@ class _LineMapState extends State<LineMap> {
           if (!skipped.containsKey(s.id)) s.id: s,
     }.values.toList(growable: false);
 
+    // La stessa inquadratura serve due volte: all'apertura, e ogni volta
+    // che si tocca il pulsante per tornarci dopo aver girovagato.
     final bounds = LatLngBounds.fromPoints(
       deviations.isNotEmpty
           ? deviations.expand((d) => d).toList()
           : directions.expand((d) => d.points).toList(),
     );
+    _routeBounds = bounds;
 
     return Column(
       children: [
@@ -248,10 +268,27 @@ class _LineMapState extends State<LineMap> {
               Positioned(
                 right: 10,
                 bottom: 10,
-                child: _LocateButton(
-                  active: _locationSub != null,
-                  busy: _locating,
-                  onPressed: _showMe,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _MapButton(
+                      icon: Icons.zoom_out_map,
+                      tooltip: 'Inquadra tutto il percorso',
+                      onPressed: _fitRoute,
+                    ),
+                    const SizedBox(height: 8),
+                    _MapButton(
+                      icon: _locationSub != null
+                          ? Icons.my_location
+                          : Icons.location_searching,
+                      tooltip: _locationSub != null
+                          ? 'Smetti di seguirmi'
+                          : 'Dove sono',
+                      active: _locationSub != null,
+                      busy: _locating,
+                      onPressed: _showMe,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -611,46 +648,53 @@ class _Legend extends StatelessWidget {
   );
 }
 
-/// Il pulsante "dove sono".
+/// Un pulsante tondo sopra la mappa.
 ///
-/// Sta sulla mappa e non nella scheda sotto perche' la posizione e' una
-/// cosa della mappa, e perche' li' e' dove uno la cerca. Al secondo tocco
-/// smette di seguirti: tenere acceso il GPS quando non serve consuma
-/// batteria per niente.
-class _LocateButton extends StatelessWidget {
-  const _LocateButton({
-    required this.active,
-    required this.busy,
+/// Stanno sulla mappa e non nella scheda sotto perche' sono comandi della
+/// mappa, ed e' li' che uno li cerca.
+class _MapButton extends StatelessWidget {
+  const _MapButton({
+    required this.icon,
+    required this.tooltip,
     required this.onPressed,
+    this.active = false,
+    this.busy = false,
   });
 
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  /// Acceso: la funzione e' in corso (per ora solo "ti sto seguendo").
   final bool active;
   final bool busy;
-  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: scheme.surface,
-      shape: const CircleBorder(),
-      elevation: 3,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: busy ? null : onPressed,
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: busy
-              ? const Padding(
-                  padding: EdgeInsets.all(13),
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                )
-              : Icon(
-                  active ? Icons.my_location : Icons.location_searching,
-                  size: 22,
-                  color: active ? Colors.blue.shade700 : scheme.onSurface,
-                ),
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: scheme.surface,
+        shape: const CircleBorder(),
+        elevation: 3,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: busy ? null : onPressed,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: busy
+                ? const Padding(
+                    padding: EdgeInsets.all(13),
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : Icon(
+                    icon,
+                    size: 22,
+                    color: active ? Colors.blue.shade700 : scheme.onSurface,
+                  ),
+          ),
         ),
       ),
     );

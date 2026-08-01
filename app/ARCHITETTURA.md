@@ -75,7 +75,7 @@ smentiscono.
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
 | `pipeline/stop_impact.dart` | fatto, 18 test + catena dal vivo |
-| `pipeline/rejoin_inference.dart` | fatto, 7 test + catena dal vivo |
+| `pipeline/rejoin_inference.dart` | fatto, 7 test — misurato su 50 casi, vedi CLAUDE.md §5 |
 | `sources/vehicles_source.dart` | fatto |
 | `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
 | `data/` | fatto — impostazioni, orchestrazione, controllo per linea, posizione |

@@ -89,7 +89,8 @@ Non sono stime. Se li rimetti in discussione, rimisurali.
 | Idem, coppie false | **0,67 con 2 vie**, o 3 vie a **0,38** | idem |
 | Data d'inizio estraibile a regex dal testo | **40%** — troppo poco | idem |
 | Rientro non nominato negli avvisi | **24 su 28** | fixture annotate |
-| Ultima via nominata: distanza dal percorso | mediana **1 m**, 21/22 ≤ 100 m | misura dedicata |
+| Rientro — ultima via nominata, distanza dal percorso | mediana **10 m**, 32/50 ≤ 100 m | `check_rejoin_live.dart` |
+| Rientro — casi rifiutati dalla guardia dei 300 m | **9 su 50** (18%) | idem |
 
 ## 4. Dove la specifica sbaglia
 
@@ -196,6 +197,18 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **La deduzione del rientro regge sulla mediana, non sulla coda.**
+  Misurato su 50 casi veri (`check_rejoin_live.dart`, senza LLM e senza
+  le annotazioni): mediana 10 m, ma 75° pct 237 m e massimo 793 m. Solo
+  32 su 50 stanno entro 100 m. Due cause distinte, tutte e due reali:
+  **le vie lunghe** — Photon dà due punti per corso Matteotti, distanti
+  1 km — e **i nomi ambigui col nome di città**: «via Torino» restituisce
+  Stadio Olimpico e Porta Nuova, il che colpisce le extraurbane. La
+  guardia dei 300 m ne rifiuta 9 su 50 e dichiara di non sapere; restano
+  9 casi fra 100 e 300 m accettati, che sono il rischio residuo.
+  ⚠️ **Una nota precedente diceva «mediana 1 m, 21/22 ≤ 100 m»: era
+  misurata sulle fixture annotate dall'LLM, cioè su un campione più
+  piccolo e non indipendente.** La misura sopra la sostituisce.
 - **Il rientro va cercato A VALLE dello stacco.** Una linea puo' passare
   due volte vicino alla stessa via: senza il vincolo si sceglie il
   passaggio già fatto. Con la direzione sbagliata la deduzione finisce a
@@ -251,6 +264,7 @@ Misure offline, su fixture e GTFS già scaricati:
 
 ```bash
 cd app && dart run tool/check_merge_offline.dart   # unione delle due fonti
+cd app && dart run tool/check_rejoin_live.dart     # qualità del rientro dedotto
 ```
 
 Verifiche dal vivo, che usano servizi veri:

@@ -1,13 +1,14 @@
 <div align="center">
 
-# 🚏 Deviazioni GTT
+# 🚏 DeviaTo
 
 **Gli avvisi di deviazione di GTT (Torino) sono scritti in prosa.<br>
-Questa app li trasforma in una mappa e risponde a una domanda sola:
+DeviaTo li trasforma in una mappa e risponde a una domanda sola:
 la mia fermata è ancora servita?**
 
 [![Licenza: MIT](https://img.shields.io/badge/licenza-MIT-blue.svg)](LICENSE)
 [![Piattaforme](https://img.shields.io/badge/piattaforme-iOS%20%7C%20Android-lightgrey.svg)](#-installazione)
+[![Distribuzione](https://img.shields.io/badge/distribuzione-solo%20sorgente-informational.svg)](#-installazione)
 [![Flutter](https://img.shields.io/badge/Flutter-Dart%203.12+-02569B.svg)](https://flutter.dev)
 [![Test](https://img.shields.io/badge/test-231-brightgreen.svg)](#-sviluppo)
 [![Dati: CC-BY](https://img.shields.io/badge/dati%20GTT-CC--BY-orange.svg)](https://www.gtt.to.it/cms/openday/open-data)
@@ -65,9 +66,16 @@ sulla rete stradale reale, lo confronta con il percorso ufficiale del GTFS
 e determina quali fermate restano fuori.
 
 > [!NOTE]
-> Progetto personale. Non è affiliato a GTT né approvato da GTT.
+> **DeviaTo** — da «devia» e «To», che a Torino è come si scrive Torino.
+> Progetto personale, non affiliato a GTT né approvato da GTT.
 
 ## 📲 Installazione
+
+> [!IMPORTANT]
+> **Qui c'è il codice sorgente, non un'app pronta.** Non ci sono APK né
+> build da scaricare: DeviaTo va compilata. Non è pensata come prodotto
+> per tutti — è un progetto personale, pubblicato perché il metodo possa
+> servire a qualcun altro.
 
 Requisiti: [Flutter](https://docs.flutter.dev/get-started/install), Dart ≥ 3.12.
 
@@ -84,10 +92,28 @@ testo degli avvisi: si incolla nelle impostazioni e resta **solo sul
 dispositivo**. Il modello predefinito è gratuito, con cinquanta richieste al
 giorno.
 
-| Piattaforma | Comando | Note |
-|---|---|---|
-| 🍎 iOS | `flutter build ios` | Provata sul simulatore. Con un Apple ID gratuito la firma scade dopo 7 giorni; per distribuirla serve il programma a pagamento |
-| 🤖 Android | `flutter build apk` | **Mai compilata**: il codice è condiviso e la configurazione è a posto, ma nessuno l'ha ancora costruita. Servono JDK 17+ e le licenze dell'SDK accettate. Nessuna licenza da sviluppatore |
+### Stato delle due piattaforme
+
+Detto com'è, perché non sono allo stesso punto:
+
+**🍎 iOS — provata.** Girata a lungo sul simulatore: è lì che sono stati
+trovati quasi tutti i difetti veri di questo progetto. Con un Apple ID
+gratuito la firma scade dopo sette giorni e va rifatta; per installarla ad
+altri serve il programma a pagamento di Apple.
+
+**🤖 Android — mai compilata.** Il codice è lo stesso e la configurazione è
+stata controllata a mano (Java 17 impostato, permessi di posizione nel
+manifest, `geolocator` che non alza il `minSdk`), ma `flutter build apk`
+non è mai stato lanciato: sulla macchina di sviluppo c'è solo Java 8.
+Quindi «funziona su Android» è un'ipotesi ragionevole, non un fatto. Serve
+un JDK 17+ e le licenze dell'SDK accettate:
+
+```bash
+flutter doctor --android-licenses && flutter build apk
+```
+
+Se lo provi e non compila, [aprire una issue](https://github.com/TCdesign-dev/gtt-deviazioni/issues)
+è il contributo più utile che si possa fare adesso.
 
 > [!IMPORTANT]
 > **Privacy.** La posizione, se la attivi, non lascia il dispositivo: non

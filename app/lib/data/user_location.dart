@@ -101,7 +101,7 @@ class UserLocation {
               'Tocca di nuovo il pulsante per concederlo.',
         LocationDenial.rifiutataPerSempre =>
           'Il permesso è negato. Si riattiva da Impostazioni › '
-              'Deviazioni GTT › Posizione.',
+              'DeviaTo › Posizione.',
         LocationDenial.servizioSpento =>
           'La localizzazione del telefono è spenta.',
         LocationDenial.nessunSegnale =>

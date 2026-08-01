@@ -1,4 +1,4 @@
-# Rilevatore Deviazioni GTT — quello che serve sapere
+# DeviaTo — quello che serve sapere
 
 Trasforma gli avvisi di deviazione di GTT (Torino) in geometria georiferita
 e risponde a una domanda sola: **la mia fermata è ancora servita?**

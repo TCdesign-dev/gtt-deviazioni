@@ -35,6 +35,7 @@ lib/
 │       ├── stop_impact.dart     ← quali fermate saltano, quali alternative
 │       └── narrator.dart        ← evento → frase in italiano
 ├── data/                        ← persistenza, cache, watchlist
+│   └── user_location.dart       ← la posizione: plugin Flutter, quindi NON in core/
 └── ui/                          ← schermate
 ```
 
@@ -77,7 +78,7 @@ smentiscono.
 | `pipeline/rejoin_inference.dart` | fatto, 7 test + catena dal vivo |
 | `sources/vehicles_source.dart` | fatto |
 | `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
-| `data/` | fatto — impostazioni, orchestrazione, controllo per linea |
+| `data/` | fatto — impostazioni, orchestrazione, controllo per linea, posizione |
 | `ui/` | fatto — 3 schermate + mappa, 11 test |
 | `core/deviation_service.dart` | fatto — la facciata, 19 test |
 | `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |

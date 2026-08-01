@@ -258,6 +258,14 @@ facendo gli screenshot troppo presto.
 ## 9. Note pratiche
 
 - I dati GTT sono **CC-BY**: citare la fonte (già nel piè di pagina).
+- **La posizione dell'utente non esce dal telefono.** Serve solo a
+  disegnare un punto sulla mappa: non si salva, non entra in nessuna
+  richiesta di rete, e Photon e Valhalla ricevono i toponimi degli avvisi
+  e il percorso della linea, mai dove sei tu. Il permesso si chiede al
+  tocco del pulsante, non all'apertura: una richiesta che arriva senza
+  che tu abbia chiesto niente si nega per riflesso, e poi è finita.
+  `geolocator` è un plugin Flutter, quindi `user_location.dart` sta in
+  `data/` e non in `core/`.
 - Photon e Valhalla sono **servizi di cortesia**: pause fra le chiamate,
   User-Agent identificabile, e sempre un ripiego se cadono.
 - La chiave OpenRouter sta **sul dispositivo**. Per un'app personale va
@@ -267,4 +275,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 206 test, 31 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 206 test, 33 commit.*

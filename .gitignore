@@ -8,3 +8,7 @@ app/build/
 app/.dart_tool/
 app/ios/Pods/
 app/.flutter-plugins*
+app/ios/Flutter/ephemeral/
+app/.idea/
+app/android/local.properties
+.DS_Store

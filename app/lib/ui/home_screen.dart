@@ -189,7 +189,7 @@ class _Loading extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'La prima volta scarico gli orari di GTT: sono 24 MB.\n'
-              'Poi non serve piu\' per una settimana.',
+              'Poi non serve più per una settimana.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),

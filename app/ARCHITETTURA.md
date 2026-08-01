@@ -58,31 +58,35 @@ smentiscono.
 | Modulo | Stato |
 |---|---|
 | `config.dart` | fatto |
-| `geo/projection.dart` | fatto, 4 test |
-| `geo/geometry.dart` | fatto, 21 test |
-| `geo/polyline.dart` | fatto, 3 test |
+| `geo/projection.dart` | fatto |
+| `geo/geometry.dart` | fatto |
+| `geo/polyline.dart` | fatto |
 | `models/transit.dart` | fatto |
 | `models/notice.dart` | fatto |
-| `gtfs/csv.dart` | fatto, 6 test |
-| `gtfs/gtfs_parser.dart` | fatto, 6 test sul GTFS vero |
+| `gtfs/csv.dart` | fatto |
+| `gtfs/gtfs_parser.dart` | fatto — test sul GTFS vero |
 | `net/gtt_http.dart` | fatto |
-| `sources/alerts_source.dart` | fatto, 4 test su feed reale |
-| `sources/variazioni_source.dart` | fatto, 5 test su pagina reale |
-| `pipeline/line_resolver.dart` | fatto, 5 test — copertura 98,4% |
-| `pipeline/notice_merge.dart` | fatto, 25 test — 31 coppie sui dati veri |
+| `sources/alerts_source.dart` | fatto — test sul feed reale |
+| `sources/variazioni_source.dart` | fatto — test sulla pagina reale |
+| `pipeline/line_resolver.dart` | fatto — copertura alias 98,4% |
+| `pipeline/notice_merge.dart` | fatto — 31 coppie sui dati veri |
 | `llm/` | fatto — misurato su 34 avvisi reali |
-| `pipeline/extractor.dart` | fatto, 11 test + banco di prova |
-| `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
-| `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
-| `pipeline/stop_impact.dart` | fatto, 18 test + catena dal vivo |
-| `pipeline/rejoin_inference.dart` | fatto, 7 test — misurato su 50 casi, vedi CLAUDE.md §5 |
+| `pipeline/extractor.dart` | fatto — 34/34 sugli avvisi veri |
+| `pipeline/geocoder.dart` | fatto — 150/150 sui toponimi veri |
+| `pipeline/route_builder.dart` | fatto — catena dal vivo 3/3 |
+| `pipeline/stop_impact.dart` | fatto |
+| `pipeline/rejoin_inference.dart` | fatto — misurato su 50 casi, vedi CLAUDE.md §5 |
 | `sources/vehicles_source.dart` | fatto |
-| `pipeline/vehicle_watch.dart` | fatto, 14 test + prova dal vivo |
-| `pipeline/route_excursion.dart` | fatto, 14 test + prova dal vivo |
-| `data/` | fatto — impostazioni, orchestrazione, controllo per linea, posizione |
-| `ui/` | fatto — 3 schermate + mappa, 18 test |
-| `core/deviation_service.dart` | fatto — la facciata, 19 test |
+| `pipeline/vehicle_watch.dart` | fatto — prova dal vivo |
+| `pipeline/route_excursion.dart` | fatto — prova dal vivo |
+| `data/` | fatto — impostazioni, orchestrazione, osservazione, posizione |
+| `ui/` | fatto — 3 schermate, mappa, striscia dell'osservazione |
+| `core/deviation_service.dart` | fatto — la facciata |
 | `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |
+
+Il numero dei test sta in un posto solo, `CLAUDE.md`: ripeterlo per ogni
+riga significa avere venti numeri da aggiornare a ogni commit, e diciannove
+sbagliati.
 
 ```bash
 flutter test
@@ -110,15 +114,12 @@ verifica che la lunghezza resti identica al metro.
 
 ## Cosa il sistema NON fa (ancora)
 
-Per non confondersi leggendo `config.dart`, che contiene piu' costanti di
-quante ne siano usate:
+Cose che il sistema dichiara di non saper fare, invece di fingere:
 
 - **non manda notifiche.** Servirebbe qualcosa fuori dal telefono che
   sorvegli gli avvisi: iOS non regge il polling in background.
 - **non calcola le distanze a piedi reali.** Le alternative alle fermate
   saltate sono in linea d'aria, e l'interfaccia lo dichiara.
-- **non deduce il punto di rientro** quando l'avviso dice solo "percorso
-  normale" senza nominare la via.
 - **non distingue le varianti dentro una direzione**: usa la principale
   (quella con piu' corse). Una deviazione che riguarda solo la corsa
   limitata verrebbe calcolata sul percorso intero.

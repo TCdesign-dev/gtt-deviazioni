@@ -224,7 +224,7 @@ class _AllGood extends StatelessWidget {
                 size: 56, color: Colors.green.shade700),
             const SizedBox(height: 16),
             Text(nienteOra
-                ? 'Adesso il percorso e\' regolare'
+                ? 'Adesso il percorso è regolare'
                 : 'Nessun avviso attivo su questa linea'),
           ],
         ),

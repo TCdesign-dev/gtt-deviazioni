@@ -286,8 +286,7 @@ In pratica:
 
 ## 7. Cosa NON fa (ancora)
 
-`app/lib/core/config.dart` contiene più costanti di quante ne siano usate.
-Per non fraintendere:
+Per non fraintendere quello che c'è in `config.dart`:
 
 - **niente notifiche.** iOS non regge il polling in background (lezione già
   pagata su un altro progetto). Servirebbe un cron esterno — GitHub Actions
@@ -365,4 +364,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 234 test, 41 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 234 test, 51 commit.*

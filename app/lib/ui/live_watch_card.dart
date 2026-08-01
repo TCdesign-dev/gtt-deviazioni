@@ -2,18 +2,28 @@ import 'package:flutter/material.dart';
 
 import '../core/pipeline/vehicle_watch.dart';
 
-/// Per quanto guardare. Finestre corte perche' qui l'utente sta davanti
-/// allo schermo: l'osservazione si ferma comunque appena ha abbastanza.
+/// Per quanto guardare.
+///
+/// La durata scelta e' **vincolante**: si guarda per tutto il tempo, non
+/// finche' basta. Prima non era cosi' e il selettore non serviva a nulla —
+/// su una linea in servizio due campioni bastavano, cioe' 31 secondi, sia
+/// che si fossero chiesti 1 o 10 minuti.
 enum WatchWindow {
   breve(Duration(minutes: 1), '1 min'),
   media(Duration(minutes: 3), '3 min'),
   lunga(Duration(minutes: 5), '5 min'),
-  moltoLunga(Duration(minutes: 10), '10 min');
+  moltoLunga(Duration(minutes: 10), '10 min'),
+
+  /// Finche' non si dice basta. Per guardare i mezzi muoversi sulla mappa,
+  /// che e' una cosa diversa dal rispondere a una domanda.
+  continua(Duration(hours: 2), 'in continuo');
 
   const WatchWindow(this.duration, this.label);
 
   final Duration duration;
   final String label;
+
+  bool get isContinuous => this == WatchWindow.continua;
 }
 
 /// "Dove sono i mezzi adesso": comandi ed esito.
@@ -29,6 +39,7 @@ class LiveWatchCard extends StatelessWidget {
     required this.result,
     required this.window,
     required this.onStart,
+    required this.onStop,
     required this.onWindowChanged,
     super.key,
     this.error,
@@ -41,6 +52,7 @@ class LiveWatchCard extends StatelessWidget {
   final String? error;
   final WatchWindow window;
   final VoidCallback onStart;
+  final VoidCallback onStop;
   final ValueChanged<WatchWindow> onWindowChanged;
 
   @override
@@ -89,8 +101,20 @@ class LiveWatchCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            if (running)
-              _Progress(samples: samples, tracks: liveTracks)
+            if (running) ...[
+              _Progress(samples: samples, tracks: liveTracks),
+              const SizedBox(height: 10),
+              // Si puo' sempre smettere: in continuo e' l'unico modo, e
+              // sugli altri e' scortese obbligare ad aspettare.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: onStop,
+                  icon: const Icon(Icons.stop_outlined, size: 18),
+                  label: Text(window.isContinuous ? 'Basta così' : 'Ferma'),
+                ),
+              ),
+            ]
             else if (error != null)
               Text(error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error))
@@ -100,7 +124,9 @@ class LiveWatchCard extends StatelessWidget {
               FilledButton.tonalIcon(
                 onPressed: onStart,
                 icon: const Icon(Icons.visibility_outlined),
-                label: const Text('Guarda adesso'),
+                label: Text(window.isContinuous
+                    ? 'Segui i mezzi'
+                    : 'Guarda adesso'),
               ),
 
             if (!running && (result != null || error != null))
@@ -143,6 +169,15 @@ class _Progress extends StatelessWidget {
       ],
     );
   }
+}
+
+/// "9 min 40 s" invece di "580 s": da quando si puo' guardare per dieci
+/// minuti, i secondi da soli non si leggono piu'.
+String _durata(Duration d) {
+  if (d.inSeconds < 90) return '${d.inSeconds} s';
+  final m = d.inMinutes;
+  final s = d.inSeconds - m * 60;
+  return s == 0 ? '$m min' : '$m min $s s';
 }
 
 class _Outcome extends StatelessWidget {
@@ -191,10 +226,23 @@ class _Outcome extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
+        // Un mezzo solo, visto due volte, non e' una prova: puo' essere
+        // fermo al capolinea. Non cambia l'esito, ma va detto.
+        if (!result.enoughVehicles && result.tracks.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              result.vehiclesSeen == 1
+                  ? 'Su un mezzo solo: prendilo con le pinze.'
+                  : 'Pochi mezzi seguiti abbastanza a lungo: '
+                      'prendilo con le pinze.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Text(
-            'Osservati ${result.observed.inSeconds} s, '
+            'Osservati ${_durata(result.observed)}, '
             '${result.samples} ${result.samples == 1 ? "controllo" : "controlli"}'
             '${result.tracks.isEmpty ? "" : ", scarto massimo ${result.maxDistance.round()} m"}',
             style: Theme.of(context).textTheme.bodySmall,

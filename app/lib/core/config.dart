@@ -162,7 +162,12 @@ class GttConfig {
   /// Finestra di osservazione GPS on-demand. Adattiva: ci si ferma appena
   /// si hanno abbastanza mezzi, e si molla dopo il massimo dichiarando
   /// "nessun mezzo osservato" — che NON significa "nessuna deviazione".
-  static const burstPollInterval = Duration(seconds: 30);
+  /// MISURATO: il feed delle posizioni si aggiorna ogni ~20 s. Chiedere
+  /// piu' spesso restituisce lo stesso timestamp — che [VehicleWatch]
+  /// scarta — quindi 20 s e' il passo che raccoglie tutti i punti che
+  /// esistono senza sprecare richieste. A 30 s una finestra di un minuto
+  /// stava in due soli campioni.
+  static const burstPollInterval = Duration(seconds: 20);
   static const burstMaxDuration = Duration(minutes: 15);
 
   /// Quanti mezzi distinti servono per dire "confermato".

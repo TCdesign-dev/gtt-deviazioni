@@ -79,6 +79,7 @@ Non sono stime. Se li rimetti in discussione, rimisurali.
 | Estrazione LLM (nemotron-3-super:free) | 34/34, **0 toponimi inventati** | `eval_extractor.dart` |
 | Quota gratuita OpenRouter | **50 richieste/giorno** in totale | misurato sul campo |
 | Avvisi di **sola fermata sospesa** | **14 su 198** | conteggio sul feed |
+| Aggiornamento del feed posizioni | **~20 s** | polling allineato |
 | Variazioni **non ancora iniziate** (tabella) | **9 su 47** (19%) | misura 01/08 |
 | `active_period.start` negli alert | **161 su 161 nel passato** | idem |
 | Variazioni pubblicate da **entrambe** le fonti | **31 coppie** su 189 avvisi | `check_merge_offline.dart` |
@@ -149,6 +150,13 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   perché il flusso passava dal ricostruire un percorso che lì non esiste.
   Un codice fermata lo prende una regex: niente LLM, niente geocoding,
   niente routing. Vale anche a LLM spento, ed è proprio quando serve.
+- **Una scorciatoia "tanto abbiamo già capito" ha reso muto un comando.**
+  L'osservazione si fermava appena due mezzi avevano due punti: su una
+  linea in servizio succede al secondo campione, cioè dopo **31 secondi**,
+  sia che si fossero chiesti 1 o 10 minuti. Il selettore di durata non
+  serviva a niente e nessun test se ne accorgeva, perché il test asseriva
+  proprio quella scorciatoia. Se l'utente sceglie un numero, quel numero
+  vince.
 - **`active_period.start` degli alert è l'ora di PUBBLICAZIONE**, non
   l'inizio della variazione. Misurato l'01/08: 161 alert su 161 hanno lo
   start nel passato, e la 65 — il cui testo dice "dalle 8:00 di lunedì 3"
@@ -214,7 +222,7 @@ Per non fraintendere:
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 203 test, devono passare tutti
+cd app && flutter test          # 206 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
 ```
 
@@ -259,4 +267,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 203 test, 29 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 206 test, 31 commit.*

@@ -35,9 +35,15 @@ class _LineScreenState extends State<LineScreen> {
   String? _watchError;
   WatchWindow _window = WatchWindow.media;
 
+  /// Chi guarda ha chiesto di smettere. Lo legge [VehicleWatch] a ogni
+  /// giro: e' l'unico modo di fermare la modalita' continua, e sulle
+  /// finestre a tempo evita di dover aspettare i dieci minuti pieni.
+  bool _stopRequested = false;
+
   Future<void> _startWatch() async {
     setState(() {
       _running = true;
+      _stopRequested = false;
       _watchResult = null;
       _watchError = null;
       _samples = 0;
@@ -58,6 +64,9 @@ class _LineScreenState extends State<LineScreen> {
             });
           }
         },
+        // Anche se la schermata viene chiusa: non ha senso continuare a
+        // interrogare GTT per qualcosa che nessuno sta guardando.
+        shouldStop: () => _stopRequested || !mounted,
       );
       if (mounted) {
         setState(() {
@@ -149,6 +158,7 @@ class _LineScreenState extends State<LineScreen> {
             error: _watchError,
             window: _window,
             onStart: _startWatch,
+            onStop: () => setState(() => _stopRequested = true),
             onWindowChanged: (w) => setState(() => _window = w),
           ),
           if (status.reports.isEmpty)

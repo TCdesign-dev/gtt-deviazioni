@@ -154,19 +154,69 @@ void main() {
     expect(r.outcome, equals(WatchOutcome.inconcludente));
   });
 
-  test('si ferma appena ha abbastanza mezzi', () async {
-    final source = _ScriptedSource([
-      [obs('A', 45.0700, 7.6700, 0), obs('B', 45.0700, 7.6800, 0)],
-      [obs('A', 45.0700, 7.6710, 30), obs('B', 45.0700, 7.6810, 30)],
-      [obs('A', 45.0700, 7.6720, 60)], // non dovrebbe servire
-    ]);
-    final r = await VehicleWatch(
-      source: source,
-      pollInterval: Duration.zero,
-      maxDuration: const Duration(seconds: 5),
-    ).watch(line: line, shapes: [principale]);
-    expect(r.samples, equals(2), reason: 'inutile continuare a interrogare');
-    expect(source.calls, equals(2));
+  group('La durata scelta e vincolante', () {
+    // Prima ci si fermava appena due mezzi avevano due punti: su una linea
+    // in servizio succede al secondo campione, cioe' dopo 31 secondi, sia
+    // che si fossero chiesti 1 o 10 minuti. Il selettore non serviva a
+    // niente, ed e' proprio la cosa che si vede usando l'app.
+    test('non si ferma appena la risposta e chiara', () async {
+      final source = _ScriptedSource([
+        [obs('A', 45.0700, 7.6700, 0), obs('B', 45.0700, 7.6800, 0)],
+        [obs('A', 45.0700, 7.6710, 30), obs('B', 45.0700, 7.6810, 30)],
+        [obs('A', 45.0700, 7.6720, 60), obs('B', 45.0700, 7.6820, 60)],
+        [obs('A', 45.0700, 7.6730, 90), obs('B', 45.0700, 7.6830, 90)],
+      ]);
+      final r = await VehicleWatch(
+        source: source,
+        pollInterval: const Duration(milliseconds: 10),
+        maxDuration: const Duration(milliseconds: 45),
+      ).watch(line: line, shapes: [principale]);
+
+      expect(r.samples, greaterThan(2),
+          reason: 'la durata chiesta va rispettata');
+      expect(r.enoughVehicles, isTrue);
+    });
+
+    test('ma se non c e NIENTE si smette lo stesso', () async {
+      // L'unico motivo per fermarsi prima: non c'e' niente da vedere.
+      // Continuare a interrogare GTT sarebbe scortese e inutile.
+      final source = _ScriptedSource(const [[], [], [], [], []]);
+      final r = await VehicleWatch(
+        source: source,
+        pollInterval: Duration.zero,
+        maxDuration: const Duration(seconds: 5),
+      ).watch(line: line, shapes: [principale]);
+      expect(r.samples, equals(3));
+    });
+
+    test('chi guarda puo dire basta', () async {
+      // E' l'unico modo di fermare la modalita' continua.
+      final source = _ScriptedSource([
+        for (var i = 0; i < 50; i++)
+          [obs('A', 45.0700, 7.6700 + i * 0.0001, i * 30)],
+      ]);
+      var visti = 0;
+      final r = await VehicleWatch(
+        source: source,
+        pollInterval: Duration.zero,
+        maxDuration: const Duration(hours: 2),
+      ).watch(
+        line: line,
+        shapes: [principale],
+        onProgress: (s, _) => visti = s,
+        shouldStop: () => visti >= 4,
+      );
+      expect(r.samples, equals(4));
+    });
+
+    test('senza abbastanza mezzi l esito lo dichiara', () async {
+      final r = await run([
+        [obs('A', 45.0700, 7.6700, 0)],
+        [obs('A', 45.0700, 7.6710, 30)],
+      ]);
+      expect(r.enoughVehicles, isFalse, reason: 'un mezzo solo non basta');
+      expect(r.outcome, equals(WatchOutcome.tuttiSulPercorso));
+    });
   });
 }
 

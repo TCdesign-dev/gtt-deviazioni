@@ -63,12 +63,20 @@ class WatchResult {
     required this.tracks,
     required this.observed,
     required this.samples,
+    required this.enoughVehicles,
   });
 
   final WatchOutcome outcome;
   final List<VehicleTrack> tracks;
   final Duration observed;
   final int samples;
+
+  /// Abbastanza mezzi seguiti abbastanza a lungo perche' l'esito regga.
+  ///
+  /// Un mezzo solo, visto due volte, non e' una prova: puo' essere fermo
+  /// al capolinea o avere il GPS ballerino. Non cambia l'esito, ma va
+  /// detto — "l'ho visto su un mezzo solo" e' un'informazione.
+  final bool enoughVehicles;
 
   int get vehiclesSeen => tracks.length;
   List<VehicleTrack> get offRoute =>
@@ -143,10 +151,14 @@ class VehicleWatch {
   /// [onProgress] riceve i campioni fatti e le tracce raccolte finora.
   /// Le tracce, non un conteggio: servono a disegnare i mezzi sulla mappa
   /// mentre l'osservazione e' ancora in corso.
+  ///
+  /// [shouldStop] viene chiesto a ogni giro: serve alla modalita' continua,
+  /// dove a decidere quando smettere e' chi guarda.
   Future<WatchResult> watch({
     required TransitLine line,
     required List<RouteShape> shapes,
     void Function(int samples, List<VehicleTrack> tracks)? onProgress,
+    bool Function()? shouldStop,
   }) async {
     final started = DateTime.now();
     final tracks = <String, VehicleTrack>{};
@@ -186,11 +198,13 @@ class VehicleWatch {
 
       onProgress?.call(samples, tracks.values.toList(growable: false));
 
-      if (_enough(tracks.values)) break;
+      if (shouldStop?.call() ?? false) break;
 
       // Se dopo qualche giro non si e' visto NIENTE, la linea non e' in
       // servizio: continuare a interrogare per un quarto d'ora non
       // cambierebbe la risposta e sarebbe scortese verso il feed di GTT.
+      // Questo e' l'unico motivo per cui ci si ferma prima del tempo
+      // chiesto: non c'e' niente da vedere, non "abbiamo gia' capito".
       if (tracks.isEmpty && samples >= _givUpAfterEmptySamples) break;
       if (DateTime.now().difference(started) + pollInterval >= maxDuration) {
         break;
@@ -203,12 +217,21 @@ class VehicleWatch {
       tracks: tracks.values.toList(growable: false),
       observed: DateTime.now().difference(started),
       samples: samples,
+      enoughVehicles: _enough(tracks.values),
     );
   }
 
-  /// Ci si ferma appena si hanno abbastanza mezzi con almeno due punti
-  /// ciascuno: aspettare i quindici minuti pieni quando la risposta c'e'
-  /// gia' e' solo tempo perso davanti a una rotella che gira.
+  /// Ci sono abbastanza mezzi con almeno due punti ciascuno perche' la
+  /// risposta sia solida?
+  ///
+  /// **Non** e' piu' un motivo per fermarsi. Lo era finche' la durata era
+  /// fissa a quindici minuti: allora aspettare tutto quando la risposta
+  /// c'era gia' era solo tempo perso. Ma da quando la durata la sceglie
+  /// chi guarda, fermarsi prima significa ignorare quella scelta — e
+  /// infatti su una linea in servizio bastavano due campioni, cioe' 31
+  /// secondi, sia che si fossero chiesti 1 o 10 minuti.
+  ///
+  /// Serve ancora, per dire quanto e' solido l'esito.
   bool _enough(Iterable<VehicleTrack> tracks) {
     final usable = tracks.where((t) => t.points.length >= 2).length;
     return usable >= minVehicles;

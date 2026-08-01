@@ -54,7 +54,8 @@ coppie su 189 avvisi), e le due copie si contraddicono sulle date. Si
 tiene il testo più completo e le date della tabella, che sono le uniche
 inserite a mano — quelle del feed sono l'ora di pubblicazione. Vale anche una richiesta LLM risparmiata a coppia.
 
-In parallelo, su richiesta: **osservazione dei mezzi** per qualche minuto.
+In parallelo, su richiesta: **osservazione dei mezzi** per qualche minuto —
+**una linea alla volta**, e continua mentre si guardano le altre.
 Dice se la deviazione è in corso o — cosa che nessun'altra fonte sa — se è
 **già finita**. E dice **dove i mezzi escono e dove rientrano**, che è
 l'unico dato del sistema a non venire da un testo: non è dedotto da come
@@ -199,6 +200,13 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **Lo stato che deve sopravvivere alla navigazione non va nella
+  schermata.** L'osservazione dei mezzi viveva in `_LineScreenState` e
+  moriva al primo `Navigator.pop`: uno la faceva partire, andava a
+  guardare un'altra linea, e tornando non c'era più. Ora sta in
+  `AppRepository`, che vive quanto l'app. Vale come regola: se una cosa
+  deve continuare mentre l'utente si sposta, la schermata è il posto
+  sbagliato.
 - **Le escursioni vanno confrontate con TUTTE le varianti, non con la
   principale.** Visto sul campo appena scritto il rilevatore: la 65 diceva
   «3 mezzi seguono il percorso normale» e subito sotto «lasciano il
@@ -273,7 +281,7 @@ Per non fraintendere:
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 231 test, devono passare tutti
+cd app && flutter test          # 234 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
 ```
 
@@ -327,4 +335,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 231 test, 39 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 234 test, 41 commit.*

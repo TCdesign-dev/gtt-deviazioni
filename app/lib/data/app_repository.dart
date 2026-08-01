@@ -9,6 +9,7 @@ import '../core/gtfs/gtfs_parser.dart';
 import '../core/llm/openai_compatible_client.dart';
 import '../core/models/notice.dart';
 import '../core/models/transit.dart';
+import '../core/pipeline/vehicle_watch.dart';
 import 'settings.dart';
 
 /// A che punto e' l'avvio.
@@ -55,6 +56,96 @@ class AppRepository extends ChangeNotifier {
   final Map<String, String> _phaseOf = {};
   String? phaseOfLine(String routeId) => _phaseOf[routeId];
   bool get isCheckingAny => _busy.isNotEmpty;
+
+  // ---------------------------------------------------------------
+  // Osservazione dei mezzi
+  //
+  // Vive QUI e non nella schermata perche' deve sopravvivere alla
+  // navigazione: uno fa partire l'osservazione sulla 15, va a guardare
+  // la 4, e quando torna la deve ritrovare in corso. Nella schermata
+  // moriva al primo `Navigator.pop`.
+  //
+  // **Una linea alla volta.** Non e' una limitazione tecnica ma una
+  // scelta: due osservazioni in parallelo raddoppiano le richieste al
+  // feed di GTT, e nessuno guarda due linee insieme. Farne partire una
+  // nuova ferma la precedente, e l'interfaccia lo dice.
+  // ---------------------------------------------------------------
+
+  /// La linea che si sta osservando adesso. null se nessuna.
+  String? watchingRouteId;
+
+  int watchSamples = 0;
+  List<VehicleTrack> liveTracks = const [];
+  String? watchError;
+
+  /// Gli esiti, per linea: tornando su una linea si rivede il suo.
+  final Map<String, WatchResult> _watchResults = {};
+  WatchResult? watchResultOf(String routeId) => _watchResults[routeId];
+
+  bool isWatching(String routeId) => watchingRouteId == routeId;
+
+  /// Il nome della linea osservata, per dirlo altrove nell'app.
+  String? get watchingLineName =>
+      watchingRouteId == null ? null : index?.lines[watchingRouteId]?.shortName;
+
+  bool _stopWatchRequested = false;
+
+  /// Comincia a guardare i mezzi di [line] per [maxDuration].
+  ///
+  /// Se se ne stava gia' guardando un'altra, quella si ferma: [stopWatch]
+  /// viene chiamato prima, e il ciclo vecchio se ne accorge al giro
+  /// successivo perche' `watchingRouteId` non e' piu' il suo.
+  Future<void> startWatch(TransitLine line, Duration maxDuration) async {
+    if (watchingRouteId != null) stopWatch();
+
+    watchingRouteId = line.routeId;
+    _stopWatchRequested = false;
+    watchSamples = 0;
+    liveTracks = const [];
+    watchError = null;
+    _watchResults.remove(line.routeId);
+    notifyListeners();
+
+    final status = _statuses[line.routeId];
+    if (status == null) {
+      watchingRouteId = null;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      final result = await VehicleWatch(maxDuration: maxDuration).watch(
+        line: status.line,
+        shapes:
+            status.allShapes.isNotEmpty ? status.allShapes : [status.shape],
+        onProgress: (samples, tracks) {
+          // Se nel frattempo si e' passati a un'altra linea, questo ciclo
+          // e' un fantasma: non deve scrivere piu' niente.
+          if (watchingRouteId != line.routeId) return;
+          watchSamples = samples;
+          liveTracks = tracks;
+          notifyListeners();
+        },
+        shouldStop: () =>
+            _stopWatchRequested || watchingRouteId != line.routeId,
+      );
+      if (watchingRouteId == line.routeId) {
+        _watchResults[line.routeId] = result;
+        liveTracks = result.tracks;
+      }
+    } on Object catch (e) {
+      if (watchingRouteId == line.routeId) watchError = '$e';
+    } finally {
+      if (watchingRouteId == line.routeId) watchingRouteId = null;
+      notifyListeners();
+    }
+  }
+
+  void stopWatch() {
+    _stopWatchRequested = true;
+    watchingRouteId = null;
+    notifyListeners();
+  }
 
   /// Quando una linea e' stata controllata l'ultima volta.
   ///

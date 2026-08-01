@@ -13,6 +13,8 @@ class LineTile extends StatelessWidget {
     required this.status,
     required this.checking,
     required this.phase,
+    required this.watching,
+    required this.watchedVehicles,
     required this.onCheck,
     this.longName,
     this.onTap,
@@ -26,6 +28,14 @@ class LineTile extends StatelessWidget {
 
   /// A che punto e' il controllo, mentre e' in corso.
   final String? phase;
+
+  /// Si stanno guardando i mezzi di questa linea, adesso.
+  ///
+  /// L'osservazione continua anche uscendo dalla schermata della linea:
+  /// se qui non si vedesse, uno non saprebbe che e' ancora accesa e la
+  /// lascerebbe girare interrogando GTT per niente.
+  final bool watching;
+  final int watchedVehicles;
   final VoidCallback onCheck;
   final VoidCallback? onTap;
 
@@ -83,12 +93,42 @@ class LineTile extends StatelessWidget {
           ),
         ),
       ),
-      title: Text(
-        longName ?? 'Linea $shortName',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              longName ?? 'Linea $shortName',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (watching) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.my_location, size: 15, color: Colors.blue.shade700),
+          ],
+        ],
       ),
-      subtitle: checking
+      subtitle: watching
+          ? Row(
+              children: [
+                Icon(
+                  Icons.directions_bus,
+                  size: 15,
+                  color: Colors.blue.shade700,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    watchedVehicles == 0
+                        ? 'sto guardando i mezzi…'
+                        : 'sto guardando $watchedVehicles '
+                              '${watchedVehicles == 1 ? "mezzo" : "mezzi"}',
+                    style: TextStyle(color: Colors.blue.shade700),
+                  ),
+                ),
+              ],
+            )
+          : checking
           // Durante il controllo il posto del riassunto lo prende
           // l'avanzamento: quello vecchio non e' piu' vero, e una riga
           // muta con la rotella accanto sembra un blocco.

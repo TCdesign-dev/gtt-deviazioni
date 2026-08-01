@@ -124,6 +124,8 @@ class HomeScreen extends StatelessWidget {
               status: repo.statusOf(line.routeId),
               checking: repo.isChecking(line.routeId),
               phase: repo.phaseOfLine(line.routeId),
+              watching: repo.isWatching(line.routeId),
+              watchedVehicles: repo.liveTracks.length,
               onCheck: () => repo.refreshLine(line),
               onTap: repo.statusOf(line.routeId) == null
                   ? null

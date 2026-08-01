@@ -10,7 +10,7 @@ la mia fermata è ancora servita?**
 [![Piattaforme](https://img.shields.io/badge/piattaforme-iOS%20%7C%20Android-lightgrey.svg)](#-installazione)
 [![Distribuzione](https://img.shields.io/badge/distribuzione-solo%20sorgente-informational.svg)](#-installazione)
 [![Flutter](https://img.shields.io/badge/Flutter-Dart%203.12+-02569B.svg)](https://flutter.dev)
-[![Test](https://img.shields.io/badge/test-231-brightgreen.svg)](#-sviluppo)
+[![Test](https://img.shields.io/badge/test-234-brightgreen.svg)](#-sviluppo)
 [![Dati: CC-BY](https://img.shields.io/badge/dati%20GTT-CC--BY-orange.svg)](https://www.gtt.to.it/cms/openday/open-data)
 
 <img src="docs/img/linea-65.png" width="320"
@@ -139,7 +139,8 @@ e la tua posizione su richiesta.
 ### 🚌 Osservazione dei mezzi in tempo reale
 
 Da un minuto a dieci, oppure in continuo, con i veicoli che si aggiornano
-sulla mappa. Risponde a una domanda che nessun'altra fonte copre — **la
+sulla mappa. **Continua mentre guardi altre linee** — una alla volta, per
+non raddoppiare le richieste al feed di GTT. Risponde a una domanda che nessun'altra fonte copre — **la
 deviazione è già finita?** — e a una che il testo non sa rispondere bene:
 **dove escono e dove rientrano davvero**. L'app lo dice con i nomi delle
 fermate, e disegna il tratto realmente percorso. È l'unico dato del
@@ -320,7 +321,7 @@ la sua data d'inizio resta inaffidabile.
 ## 🧪 Sviluppo
 
 ```bash
-cd app && flutter test      # 231 test
+cd app && flutter test      # 234 test
 cd app && flutter analyze
 ```
 

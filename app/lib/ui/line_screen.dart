@@ -5,7 +5,6 @@ import '../core/models/notice.dart';
 import '../core/models/transit.dart';
 import '../data/app_repository.dart';
 import '../core/pipeline/stop_impact.dart';
-import '../core/pipeline/vehicle_watch.dart';
 import 'line_map.dart';
 import 'live_watch_card.dart';
 
@@ -26,60 +25,13 @@ class LineScreen extends StatefulWidget {
 }
 
 class _LineScreenState extends State<LineScreen> {
-  // Lo stato dell'osservazione sta qui e non nella scheda, perche' serve
-  // anche alla mappa: i mezzi si disegnano mentre si guardano.
-  bool _running = false;
-  int _samples = 0;
-  List<VehicleTrack> _liveTracks = const [];
-  WatchResult? _watchResult;
-  String? _watchError;
+  // L'osservazione NON sta qui: sta nel repository, perche' deve
+  // continuare anche quando questa schermata viene chiusa. Qui resta solo
+  // la scelta della durata, che e' una preferenza di chi guarda.
   WatchWindow _window = WatchWindow.media;
 
-  /// Chi guarda ha chiesto di smettere. Lo legge [VehicleWatch] a ogni
-  /// giro: e' l'unico modo di fermare la modalita' continua, e sulle
-  /// finestre a tempo evita di dover aspettare i dieci minuti pieni.
-  bool _stopRequested = false;
-
-  Future<void> _startWatch() async {
-    setState(() {
-      _running = true;
-      _stopRequested = false;
-      _watchResult = null;
-      _watchError = null;
-      _samples = 0;
-      _liveTracks = const [];
-    });
-
-    try {
-      final status = widget.repo.statusOf(widget.line.routeId)!;
-      final result = await VehicleWatch(maxDuration: _window.duration).watch(
-        line: status.line,
-        shapes:
-            status.allShapes.isNotEmpty ? status.allShapes : [status.shape],
-        onProgress: (samples, tracks) {
-          if (mounted) {
-            setState(() {
-              _samples = samples;
-              _liveTracks = tracks;
-            });
-          }
-        },
-        // Anche se la schermata viene chiusa: non ha senso continuare a
-        // interrogare GTT per qualcosa che nessuno sta guardando.
-        shouldStop: () => _stopRequested || !mounted,
-      );
-      if (mounted) {
-        setState(() {
-          _watchResult = result;
-          _liveTracks = result.tracks;
-        });
-      }
-    } on Object catch (e) {
-      if (mounted) setState(() => _watchError = '$e');
-    } finally {
-      if (mounted) setState(() => _running = false);
-    }
-  }
+  void _startWatch() =>
+      widget.repo.startWatch(widget.line, _window.duration);
 
   String get _checkedLabel {
     final t = widget.repo.checkedAt(widget.line.routeId);
@@ -105,6 +57,13 @@ class _LineScreenState extends State<LineScreen> {
     // dalla watchlist mentre e' aperta la lascerebbe senza dati.
     if (status == null) return const Scaffold(body: SizedBox.shrink());
     final checking = widget.repo.isChecking(widget.line.routeId);
+    final osservando = widget.repo.isWatching(widget.line.routeId);
+    final esito = widget.repo.watchResultOf(widget.line.routeId);
+    // Se si sta guardando un'ALTRA linea, va detto: partire da qui la
+    // fermerebbe, e non e' una cosa che deve succedere di sorpresa.
+    final altraInCorso = widget.repo.watchingRouteId != null && !osservando
+        ? widget.repo.watchingLineName
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -177,19 +136,20 @@ class _LineScreenState extends State<LineScreen> {
           // serve anche quando la deviazione non si e' potuta ricostruire.
           LineMap(
             status: status,
-            vehicles: _liveTracks,
-            observed: _watchResult?.consensus,
+            vehicles: osservando ? widget.repo.liveTracks : const [],
+            observed: esito?.consensus,
           ),
           LiveWatchCard(
-            running: _running,
-            samples: _samples,
-            liveTracks: _liveTracks,
-            result: _watchResult,
-            error: _watchError,
+            running: osservando,
+            samples: widget.repo.watchSamples,
+            liveTracks: osservando ? widget.repo.liveTracks : const [],
+            result: esito,
+            error: widget.repo.watchError,
             window: _window,
             shape: status.shape,
+            altraLinea: altraInCorso,
             onStart: _startWatch,
-            onStop: () => setState(() => _stopRequested = true),
+            onStop: widget.repo.stopWatch,
             onWindowChanged: (w) => setState(() => _window = w),
           ),
           if (status.reports.isEmpty)

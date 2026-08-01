@@ -41,6 +41,7 @@ class LiveWatchCard extends StatelessWidget {
     required this.result,
     required this.window,
     required this.shape,
+    required this.altraLinea,
     required this.onStart,
     required this.onStop,
     required this.onWindowChanged,
@@ -58,6 +59,10 @@ class LiveWatchCard extends StatelessWidget {
   /// Il percorso principale: serve a dire "escono dopo Sabotino" invece
   /// di "escono al metro 1420".
   final RouteShape shape;
+
+  /// Il nome della linea che si sta gia' osservando, se e' un'altra.
+  /// Partire da qui la fermerebbe, e va detto prima.
+  final String? altraLinea;
   final VoidCallback onStart;
   final VoidCallback onStop;
   final ValueChanged<WatchWindow> onWindowChanged;
@@ -127,7 +132,7 @@ class LiveWatchCard extends StatelessWidget {
                   style: TextStyle(color: Theme.of(context).colorScheme.error))
             else if (result != null)
               _Outcome(result: result!, shape: shape)
-            else
+            else ...[
               FilledButton.tonalIcon(
                 onPressed: onStart,
                 icon: const Icon(Icons.visibility_outlined),
@@ -135,6 +140,21 @@ class LiveWatchCard extends StatelessWidget {
                     ? 'Segui i mezzi'
                     : 'Guarda adesso'),
               ),
+              // Una linea alla volta: due osservazioni in parallelo
+              // raddoppierebbero le richieste al feed di GTT, e nessuno
+              // guarda due linee insieme. Ma dirlo dopo sarebbe una
+              // sorpresa sgradevole.
+              if (altraLinea != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Sto guardando la $altraLinea: se cominci qui, '
+                    'quella si ferma.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline),
+                  ),
+                ),
+            ],
 
             if (!running && (result != null || error != null))
               Align(

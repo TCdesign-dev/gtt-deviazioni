@@ -121,6 +121,25 @@ class GttConfig {
   /// Passo di campionamento per le verifiche geometriche sul percorso.
   static const routeSampleMeters = 25.0;
 
+  // ------------------------------------------------- unione degli avvisi
+
+  /// Quando due avvisi delle due fonti sono la stessa variazione.
+  ///
+  /// Si confrontano i nomi di via nominati (vedi `pipeline/notice_merge`),
+  /// non i testi interi: il vocabolario delle deviazioni si ripete uguale
+  /// dappertutto. Il contenimento e' rapportato al piu' piccolo dei due
+  /// insiemi, perche' l'alert dice quasi sempre tutto quello che dice la
+  /// tabella piu' altro.
+  ///
+  /// MISURATO sulle 80 coppie stessa-linea del 31/07/2026
+  /// (`tool/check_merge_offline.dart`): le 31 coppie vere stanno fra 0,67
+  /// e 1,00 con almeno 3 vie in comune. Le sbagliate mancano sempre una
+  /// delle due condizioni: o hanno 2 vie sole pur somigliandosi (la 14 e
+  /// la 63 a 0,67), o hanno 3 vie in comune ma un contenimento basso (la
+  /// 2C a 0,38). Nessuna le supera tutte e due.
+  static const mergeMinStreetOverlap = 0.6;
+  static const mergeMinSharedStreets = 3;
+
   // -------------------------------------------------- punto di rientro
 
   /// Quanto puo' distare dal percorso l'ultima via nominata perche' se ne

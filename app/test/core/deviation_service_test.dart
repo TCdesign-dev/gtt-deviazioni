@@ -8,14 +8,19 @@ import 'package:gtt_deviazioni/core/pipeline/extractor.dart';
 import 'package:gtt_deviazioni/core/pipeline/stop_impact.dart';
 
 /// Un LLM che non risponde mai: quota finita, rete assente, servizio giu'.
+/// Conta anche le richieste, che sono la risorsa scarsa: 50 al giorno.
 class _LlmSpento implements LlmClient {
+  int richieste = 0;
+
   @override
   String get name => 'spento';
 
   @override
-  Future<String> complete(String prompt, {Map<String, dynamic>? jsonSchema}) =>
-      Future.error(LlmException(
-          'spento', 'rete non raggiungibile: SocketException'));
+  Future<String> complete(String prompt, {Map<String, dynamic>? jsonSchema}) {
+    richieste++;
+    return Future.error(LlmException(
+        'spento', 'rete non raggiungibile: SocketException'));
+  }
 }
 
 /// Quando qualcosa non funziona, chi usa l'app deve capire SE puo' fare
@@ -211,6 +216,117 @@ void main() {
       );
       expect(status.reports.single.confidence, equals(Confidence.soloTesto));
       expect(status.allSkippedStops, isEmpty);
+    });
+  });
+
+  group('Le due fonti non si contano due volte', () {
+    // Il caso visto dal vivo sulla 65 l'01/08/2026: la deviazione IREN di
+    // via Lessona arrivava sia dal feed sia dalla tabella e compariva due
+    // volte nel dettaglio della linea, con la copia dall'alert marcata
+    // "in corso" e quella della tabella "comincia il 3".
+    final linea65 = RouteShape(
+      shapeId: '65:0',
+      routeId: '65U',
+      directionId: 0,
+      headsign: 'CORSO BOLZANO',
+      points: const [GeoPoint(45.0800, 7.6600), GeoPoint(45.0850, 7.6700)],
+    );
+    final index = GtfsIndex(
+      feedVersion: 'test',
+      builtAt: DateTime(2026),
+      lines: {'65U': const TransitLine(routeId: '65U', shortName: '65')},
+      shapes: {'65U': [linea65]},
+      stops: const {},
+    );
+    const linea = TransitLine(routeId: '65U', shortName: '65');
+
+    final dalFeed = RawNotice(
+      id: 'alert-65',
+      source: NoticeSource.gtfsRtAlert,
+      headline: 'Linea 65 deviata in direzione corso Bolzano',
+      text: 'dalle 8:00 di lunedì 3 sino alle 18:00 di venerdì 7 agosto '
+          '2026. Da via Asinari di Bernezzo angolo corso Monte Grappa, per '
+          'via Asinari di Bernezzo, piazza Chironi, via Medici, corso '
+          'Lecce, via Lessona, segue percorso normale. Causa lavori IREN '
+          'teleriscaldamento in via Lessona angolo corso Monte Grappa.',
+      routeIds: const ['65U'],
+      // MISURATO: 161 alert su 161 hanno lo start nel passato, perche' e'
+      // l'ora di pubblicazione.
+      validFrom: DateTime(2026, 7, 31, 8, 16),
+      validUntil: DateTime(2026, 8, 7, 16, 59),
+      sourceUrl: '',
+    );
+    final dallaTabella = RawNotice(
+      id: 'web-65',
+      source: NoticeSource.webVariazioni,
+      text: 'Da via Asinari di Bernezzo angolo corso Monte Grappa prosegue '
+          'per via Asinari di Bernezzo, piazza Chironi, via Medici, corso '
+          'Lecce, via Lessona, percorso normale.',
+      lineHints: const ['65'],
+      directionHint: 'corso Bolzano',
+      validFrom: DateTime(2026, 8, 3, 8, 0),
+      validUntil: DateTime(2026, 8, 7, 18, 0),
+      sourceUrl: '',
+    );
+
+    test('la linea vede un avviso solo, con la data buona', () {
+      final service = DeviationService(index: index, llm: _LlmSpento());
+      final mie = service.noticesFor(linea, [dalFeed, dallaTabella]);
+
+      expect(mie.length, equals(1));
+      expect(mie.single.validFrom, equals(DateTime(2026, 8, 3, 8, 0)));
+      expect(mie.single.startsAfter(DateTime(2026, 8, 1, 14, 0)), isTrue);
+    });
+
+    test('e una richiesta LLM invece di due', () async {
+      // Ogni avviso costa una richiesta e ce ne sono 50 gratuite al
+      // giorno: il doppione non sprecava solo spazio sullo schermo.
+      final llm = _LlmSpento();
+      final service = DeviationService(index: index, llm: llm);
+      await service.statusOf(linea, allNotices: [dalFeed, dallaTabella]);
+      expect(llm.richieste, equals(1));
+    });
+
+    test('la deviazione resta una anche nel rapporto finale', () async {
+      final service = DeviationService(index: index, llm: _LlmSpento());
+      final status =
+          await service.statusOf(linea, allNotices: [dalFeed, dallaTabella]);
+      expect(status.reports.length, equals(1));
+      // Il testo di GTT che si mostra e' il piu' completo dei due.
+      expect(status.reports.single.notice.text, contains('Causa lavori IREN'));
+    });
+
+    test('due linee diverse tengono ognuna il suo avviso', () {
+      // La stessa riga della tabella vale spesso per piu' linee: unirla
+      // all'alert di una non deve toglierla alle altre.
+      final index2 = GtfsIndex(
+        feedVersion: 'test',
+        builtAt: DateTime(2026),
+        lines: {
+          '65U': const TransitLine(routeId: '65U', shortName: '65'),
+          '68U': const TransitLine(routeId: '68U', shortName: '68'),
+        },
+        shapes: {'65U': [linea65]},
+        stops: const {},
+      );
+      final perDue = RawNotice(
+        id: 'web-due',
+        source: NoticeSource.webVariazioni,
+        text: dallaTabella.text,
+        lineHints: const ['65 - 68'],
+        sourceUrl: '',
+      );
+      final service = DeviationService(index: index2, llm: _LlmSpento());
+
+      expect(service.noticesFor(linea, [dalFeed, perDue]).length, equals(1));
+      expect(
+          service
+              .noticesFor(
+                  const TransitLine(routeId: '68U', shortName: '68'),
+                  [dalFeed, perDue])
+              .single
+              .isMerged,
+          isFalse);
     });
   });
 

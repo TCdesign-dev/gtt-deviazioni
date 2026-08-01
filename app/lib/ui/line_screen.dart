@@ -442,6 +442,19 @@ class _OriginalText extends StatelessWidget {
             Text(n.headline!,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
           Text(n.text),
+          // Quando GTT pubblica la stessa variazione in due posti se ne
+          // mostra una sola, ed e' giusto dire perche': chi confronta con
+          // il sito deve capire da dove vengono le date.
+          if (n.isMerged)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'GTT lo pubblica sia negli avvisi sia nella tabella delle '
+                'variazioni. Qui c\'è il testo più completo dei due, con le '
+                'date della tabella.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
           if (n.reason != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),

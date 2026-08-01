@@ -5,6 +5,7 @@ import 'models/transit.dart';
 import 'pipeline/extractor.dart';
 import 'pipeline/geocoder.dart';
 import 'pipeline/line_resolver.dart';
+import 'pipeline/notice_merge.dart';
 import 'pipeline/rejoin_inference.dart';
 import 'pipeline/route_builder.dart';
 import 'pipeline/stop_impact.dart';
@@ -149,6 +150,11 @@ class DeviationService {
 
   /// Gli avvisi di tutte le fonti, presi una volta e riusati per tutte le
   /// linee della watchlist: sono due richieste, non due per linea.
+  ///
+  /// Qui le due liste si concatenano e basta: i doppioni fra le fonti li
+  /// toglie [noticesFor], perche' per riconoscerli serve sapere di quale
+  /// linea si sta parlando. Due variazioni diverse in due quartieri
+  /// diversi possono nominare le stesse vie.
   Future<List<RawNotice>> fetchAllNotices() async {
     final out = <RawNotice>[];
     try {
@@ -164,7 +170,13 @@ class DeviationService {
     return out;
   }
 
-  /// Gli avvisi che riguardano [line], fra quelli gia' scaricati.
+  /// Gli avvisi che riguardano [line], fra quelli gia' scaricati, con i
+  /// doppioni fra le due fonti gia' uniti.
+  ///
+  /// L'unione avviene qui e non a monte perche' e' qui che si sa di quale
+  /// linea si parla, ed e' la linea a distinguere due variazioni che
+  /// nominano le stesse vie. Vale anche il contrario: una riga della
+  /// tabella copre spesso piu' linee, e si unisce all'alert di ognuna.
   List<RawNotice> noticesFor(TransitLine line, List<RawNotice> all) {
     final out = <RawNotice>[];
     for (final n in all) {
@@ -186,7 +198,7 @@ class DeviationService {
         }
       }
     }
-    return out;
+    return NoticeMerge.dedupe(out);
   }
 
   /// Lo stato completo di una linea.

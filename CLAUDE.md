@@ -48,6 +48,12 @@ Il codice si legge dal testo e si cerca nel GTFS — nessun LLM, nessuna
 rete oltre a quella già fatta. È il ramo di massima confidenza, e l'unico
 che funziona anche a quota esaurita.
 
+E con un passaggio prima di tutto il resto: **le due fonti si uniscono**.
+La stessa variazione arriva spesso sia dal feed sia dalla tabella (31
+coppie su 189 avvisi), e le due copie si contraddicono sulle date. Si
+tiene il testo più completo e le date della tabella, che sono le uniche
+inserite a mano — quelle del feed sono l'ora di pubblicazione. Vale anche una richiesta LLM risparmiata a coppia.
+
 In parallelo, su richiesta: **osservazione dei mezzi** per qualche minuto,
 che dice se la deviazione è in corso o — cosa che nessun'altra fonte sa —
 se è **già finita**.
@@ -75,6 +81,11 @@ Non sono stime. Se li rimetti in discussione, rimisurali.
 | Avvisi di **sola fermata sospesa** | **14 su 198** | conteggio sul feed |
 | Variazioni **non ancora iniziate** (tabella) | **9 su 47** (19%) | misura 01/08 |
 | `active_period.start` negli alert | **161 su 161 nel passato** | idem |
+| Variazioni pubblicate da **entrambe** le fonti | **31 coppie** su 189 avvisi | `check_merge_offline.dart` |
+| Di queste, quelle in cui la data d'inizio cambia | **17** (fino a 3 mesi) | idem |
+| Test | **203** | `flutter test` |
+| Somiglianza fra le vie nominate: coppie vere | **0,67 – 1,00** e ≥3 vie | idem |
+| Idem, coppie false | **0,67 con 2 vie**, o 3 vie a **0,38** | idem |
 | Data d'inizio estraibile a regex dal testo | **40%** — troppo poco | idem |
 | Rientro non nominato negli avvisi | **24 su 28** | fixture annotate |
 | Ultima via nominata: distanza dal percorso | mediana **1 m**, 21/22 ≤ 100 m | misura dedicata |
@@ -143,6 +154,19 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   start nel passato, e la 65 — il cui testo dice "dalle 8:00 di lunedì 3"
   — risultava già attiva. La data vera d'inizio la dà solo la tabella
   `/cms/variazioni`, che ce l'ha in colonna.
+- **Le due fonti datano cose diverse, non una giusta e una sbagliata.**
+  La tabella dà l'inizio dei *lavori interi* (la 46: piazza Baldissera dal
+  15/09/2025), l'alert descrive la *fase corrente* (dal 26/05/2026). Si
+  tiene quella della tabella perché è un campo vero e non un timestamp di
+  pubblicazione, e perché sbaglia dalla parte sicura: al più mostra come
+  "in corso" qualcosa di programmato, mai il contrario.
+- **Il capolinea che sta dopo "direzione" non è una via percorsa.**
+  Riconoscendo i doppioni fra le due fonti, "Direzione via Moncalieri
+  (Grugliasco)" faceva somigliare fra loro tutte le deviazioni della 55
+  in quel senso di marcia: i lavori sui binari di luglio e la deviazione
+  del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
+  il percorso dell'altro. Contano le vie **percorse**, non quelle che
+  dicono dove va il mezzo.
 - **Il rientro va cercato A VALLE dello stacco.** Una linea puo' passare
   due volte vicino alla stessa via: senza il vincolo si sceglie il
   passaggio già fatto. Con la direzione sbagliata la deduzione finisce a
@@ -178,9 +202,6 @@ Per non fraintendere:
   pagata su un altro progetto). Servirebbe un cron esterno — GitHub Actions
   è gratis e basta.
 - **distanze a piedi in linea d'aria**, non reali. L'interfaccia lo dichiara.
-- **non deduplica le due fonti.** La stessa deviazione può arrivare sia
-  dall'alert sia dalla tabella e comparire due volte — con l'aggravante
-  che solo la seconda porta la data d'inizio giusta.
 - **dentro una direzione usa solo la variante principale.** Una deviazione
   che riguardasse la sola corsa limitata verrebbe calcolata sul percorso
   intero — lo stesso errore corretto un livello più in alto.
@@ -193,8 +214,14 @@ Per non fraintendere:
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 173 test, devono passare tutti
+cd app && flutter test          # 203 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
+```
+
+Misure offline, su fixture e GTFS già scaricati:
+
+```bash
+cd app && dart run tool/check_merge_offline.dart   # unione delle due fonti
 ```
 
 Verifiche dal vivo, che usano servizi veri:
@@ -232,4 +259,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 173 test, 28 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 203 test, 29 commit.*

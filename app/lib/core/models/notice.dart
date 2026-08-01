@@ -27,6 +27,7 @@ class RawNotice {
     this.effect,
     this.validFrom,
     this.validUntil,
+    this.mergedFrom = const [],
   });
 
   final String id;
@@ -56,6 +57,27 @@ class RawNotice {
   final DateTime? validUntil;
 
   final String sourceUrl;
+
+  /// Gli avvisi originali, quando le due fonti raccontavano la stessa
+  /// variazione e sono stati uniti (vedi [NoticeMerge]). Vuoto altrimenti.
+  ///
+  /// Si conservano interi apposta: di un avviso unito si mostra il testo
+  /// piu' completo, ma quello scartato non e' perduto — il testo di GTT
+  /// deve restare disponibile comunque (§6.2).
+  final List<RawNotice> mergedFrom;
+
+  bool get isMerged => mergedFrom.length > 1;
+
+  /// Le fonti che hanno pubblicato questa variazione.
+  Set<NoticeSource> get sources =>
+      isMerged ? mergedFrom.map((n) => n.source).toSet() : {source};
+
+  /// Tutti i testi che parlano di questa variazione: il proprio e quelli
+  /// degli avvisi uniti. Serve a cercare i dati certi — i codici delle
+  /// fermate — in TUTTO quello che GTT ha scritto, non solo nel testo che
+  /// si e' scelto di mostrare.
+  Iterable<String> get allTexts =>
+      [fullText, ...mergedFrom.map((n) => n.fullText)];
 
   /// La variazione deve ancora cominciare?
   ///
@@ -89,7 +111,7 @@ class RawNotice {
 
   /// L'avviso parla di una variazione di percorso?
   /// Serve a scartare gli avvisi su ascensori, sciopero, orari estivi.
-  bool get mentionsRouteChange => _routeChange.hasMatch(fullText);
+  bool get mentionsRouteChange => allTexts.any(_routeChange.hasMatch);
 
   /// Codici delle fermate sospese, estratti dal TESTO.
   ///
@@ -100,11 +122,18 @@ class RawNotice {
   ///
   /// GTT usa forme diverse: `Fermata 3447`, `fermata n. 15080`,
   /// `Fermata n° 3445`, `fermata n.1182`.
+  ///
+  /// Si cerca in TUTTI i testi: di un avviso unito si mostra il piu'
+  /// completo, ma un codice di fermata scritto solo nell'altro resta il
+  /// dato piu' certo che il sistema abbia, e perderlo per una scelta di
+  /// impaginazione sarebbe assurdo.
   List<String> get suspendedStopCodes {
     final out = <String>{};
-    for (final m in _stopCode.allMatches(fullText)) {
-      final code = m.group(1);
-      if (code != null) out.add(code);
+    for (final text in allTexts) {
+      for (final m in _stopCode.allMatches(text)) {
+        final code = m.group(1);
+        if (code != null) out.add(code);
+      }
     }
     return out.toList();
   }

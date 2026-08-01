@@ -28,6 +28,7 @@ lib/
 │   ├── sources/                 ← una classe per fonte GTT, tutte intercambiabili
 │   └── pipeline/                ← i passaggi del calcolo, uno per file
 │       ├── line_resolver.dart   ← "55" → 55U   (tabella alias, §4.1)
+│       ├── notice_merge.dart    ← due fonti → un avviso solo, per linea
 │       ├── extractor.dart       ← testo → JSON  (LLM)
 │       ├── geocoder.dart        ← toponimo → coordinate, VINCOLATO
 │       ├── route_builder.dart   ← vie → polilinea  (Valhalla)
@@ -67,6 +68,7 @@ smentiscono.
 | `sources/alerts_source.dart` | fatto, 4 test su feed reale |
 | `sources/variazioni_source.dart` | fatto, 5 test su pagina reale |
 | `pipeline/line_resolver.dart` | fatto, 5 test — copertura 98,4% |
+| `pipeline/notice_merge.dart` | fatto, 25 test — 31 coppie sui dati veri |
 | `llm/` | fatto — misurato su 34 avvisi reali |
 | `pipeline/extractor.dart` | fatto, 11 test + banco di prova |
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
@@ -77,7 +79,7 @@ smentiscono.
 | `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
 | `data/` | fatto — impostazioni, orchestrazione, controllo per linea |
 | `ui/` | fatto — 3 schermate + mappa, 11 test |
-| `core/deviation_service.dart` | fatto — la facciata, 15 test |
+| `core/deviation_service.dart` | fatto — la facciata, 19 test |
 | `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |
 
 ```bash
@@ -115,8 +117,6 @@ quante ne siano usate:
   saltate sono in linea d'aria, e l'interfaccia lo dichiara.
 - **non deduce il punto di rientro** quando l'avviso dice solo "percorso
   normale" senza nominare la via.
-- **non deduplica le due fonti**: la stessa deviazione può comparire due
-  volte, dall'alert e dalla tabella.
 - **non distingue le varianti dentro una direzione**: usa la principale
   (quella con piu' corse). Una deviazione che riguarda solo la corsa
   limitata verrebbe calcolata sul percorso intero.

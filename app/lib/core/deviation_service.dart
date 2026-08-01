@@ -97,10 +97,23 @@ class LineStatus {
   /// I percorsi da disegnare: andata e ritorno.
   List<RouteShape> get mainShapes => [shape, ?shapeReturn];
 
+  /// Quello che sta succedendo ADESSO.
+  ///
+  /// La domanda dell'utente e' al presente — "la mia fermata e' servita?"
+  /// — e rispondere contando una deviazione che comincia fra tre
+  /// settimane sarebbe una risposta a un'altra domanda.
+  List<DeviationReport> get activeReports =>
+      reports.where((r) => !r.notice.startsAfter(checkedAt)).toList();
+
+  /// Quello che comincera'. Non si nasconde: sapere in anticipo che dal
+  /// 24 agosto la tua fermata salta e' utile. Si tiene solo separato.
+  List<DeviationReport> get scheduledReports =>
+      reports.where((r) => r.notice.startsAfter(checkedAt)).toList();
+
   /// Tutte le fermate non servite, da tutti gli avvisi attivi.
   /// Una linea puo' avere piu' deviazioni contemporanee (§10.14).
   List<StopImpact> get allSkippedStops =>
-      reports.expand((r) => r.skippedStops).toList();
+      activeReports.expand((r) => r.skippedStops).toList();
 }
 
 /// La facciata del sistema: da una linea al suo stato.

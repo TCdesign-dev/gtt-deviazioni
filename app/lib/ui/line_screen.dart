@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/deviation_service.dart';
+import '../core/models/notice.dart';
 import '../core/models/transit.dart';
 import '../data/app_repository.dart';
 import '../core/pipeline/stop_impact.dart';
@@ -155,9 +156,26 @@ class _LineScreenState extends State<LineScreen> {
               padding: EdgeInsets.all(32),
               child: _AllGood(),
             )
-          else
-            for (final report in status.reports)
+          else ...[
+            if (status.activeReports.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: _AllGood(nienteOra: true),
+              ),
+            for (final report in status.activeReports)
               _ReportCard(report: report, status: status),
+            // In fondo, dopo cio' che succede adesso: sapere del 24 agosto
+            // e' utile, ma non e' la risposta alla domanda di oggi.
+            if (status.scheduledReports.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 28, 16, 4),
+                child: Text('Piu\' avanti',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            for (final report in status.scheduledReports)
+              _ReportCard(
+                  report: report, status: status, daAvvenire: true),
+          ],
         ],
       ),
     );
@@ -165,7 +183,11 @@ class _LineScreenState extends State<LineScreen> {
 }
 
 class _AllGood extends StatelessWidget {
-  const _AllGood();
+  const _AllGood({this.nienteOra = false});
+
+  /// C'e' qualcosa in programma, ma non adesso: dirlo "nessun avviso"
+  /// sarebbe falso.
+  final bool nienteOra;
 
   @override
   Widget build(BuildContext context) => Center(
@@ -175,17 +197,26 @@ class _AllGood extends StatelessWidget {
             Icon(Icons.check_circle_outline,
                 size: 56, color: Colors.green.shade700),
             const SizedBox(height: 16),
-            const Text('Nessun avviso attivo su questa linea'),
+            Text(nienteOra
+                ? 'Adesso il percorso e\' regolare'
+                : 'Nessun avviso attivo su questa linea'),
           ],
         ),
       );
 }
 
 class _ReportCard extends StatelessWidget {
-  const _ReportCard({required this.report, required this.status});
+  const _ReportCard({
+    required this.report,
+    required this.status,
+    this.daAvvenire = false,
+  });
 
   final DeviationReport report;
   final LineStatus status;
+
+  /// La variazione deve ancora cominciare.
+  final bool daAvvenire;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +226,10 @@ class _ReportCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ConfidenceStrip(report: report),
+          if (daAvvenire)
+            _ScheduledStrip(notice: report.notice, now: status.checkedAt)
+          else
+            _ConfidenceStrip(report: report),
 
           // 1. La risposta alla domanda vera.
           if (report.skippedStops.isNotEmpty)
@@ -210,6 +244,44 @@ class _ReportCard extends StatelessWidget {
 
           // 3. Il testo di GTT, sempre.
           _OriginalText(report: report),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Comincia fra 23 giorni": la data da sola fa fare il conto a mano.
+class _ScheduledStrip extends StatelessWidget {
+  const _ScheduledStrip({required this.notice, required this.now});
+
+  final RawNotice notice;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final giorni = notice.daysUntilStart(now) ?? 0;
+    final quando = switch (giorni) {
+      1 => 'da domani',
+      2 => 'da dopodomani',
+      _ => 'fra $giorni giorni',
+    };
+    final d = notice.validFrom!;
+    final data = '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+    final blu = Colors.blue.shade700;
+
+    return Container(
+      width: double.infinity,
+      color: blu.withValues(alpha: 0.12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(Icons.event_outlined, size: 18, color: blu),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Non ancora in vigore — comincia $quando ($data)',
+                style: TextStyle(color: blu, fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );

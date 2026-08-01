@@ -57,6 +57,32 @@ class RawNotice {
 
   final String sourceUrl;
 
+  /// La variazione deve ancora cominciare?
+  ///
+  /// MISURATO (01/08/2026): 9 righe su 47 della tabella `/cms/variazioni`
+  /// partono in futuro — una anche a 23 giorni di distanza. Nel feed
+  /// protobuf invece 0 su 162: li' GTT pubblica solo cio' che e' gia' in
+  /// corso. Trattarle tutte allo stesso modo significherebbe dire "la tua
+  /// fermata non e' servita" per qualcosa che comincia fra tre settimane.
+  ///
+  /// Si confrontano le DATE, non gli istanti: un avviso che parte oggi ha
+  /// `validFrom` a mezzanotte, cioe' gia' passata, ed e' attivo.
+  bool startsAfter(DateTime now) {
+    final from = validFrom;
+    if (from == null) return false;
+    final oggi = DateTime(now.year, now.month, now.day);
+    return DateTime(from.year, from.month, from.day).isAfter(oggi);
+  }
+
+  /// Quanti giorni mancano all'inizio. null se e' gia' cominciata.
+  int? daysUntilStart(DateTime now) {
+    if (!startsAfter(now)) return null;
+    final from = validFrom!;
+    return DateTime(from.year, from.month, from.day)
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
+  }
+
   /// Testo su cui cercare: titolo piu' corpo.
   String get fullText =>
       headline == null || headline!.isEmpty ? text : '$headline $text';

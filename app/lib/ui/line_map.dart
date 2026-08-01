@@ -60,7 +60,10 @@ class _LineMapState extends State<LineMap> {
     if (directions.isEmpty) return const SizedBox.shrink();
     final official = directions.first.points;
 
-    final deviations = status.reports
+    // Solo cio' che e' in corso: disegnare in rosso una deviazione che
+    // comincia fra tre settimane farebbe scendere alla fermata sbagliata
+    // oggi.
+    final deviations = status.activeReports
         .where((r) => r.hasMap)
         .map((r) => r.deviatedGeometry!
             .map((p) => LatLng(p.lat, p.lon))

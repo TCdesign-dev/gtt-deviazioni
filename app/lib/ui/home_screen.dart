@@ -156,9 +156,20 @@ class _LineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final skipped = status?.allSkippedStops.length ?? 0;
+    // Gli avvisi che devono ancora cominciare non entrano nel riassunto
+    // di adesso: si dicono a parte, sotto.
+    final attivi = status?.activeReports.length ?? 0;
+    final futuri = status?.scheduledReports.length ?? 0;
+
+    String avvisi(int n) => '$n ${n == 1 ? "avviso" : "avvisi"}';
 
     final (Color colour, IconData icon, String label) = switch (status) {
       null => (scheme.outline, Icons.help_outline, 'non ancora controllata'),
+      final s when attivi == 0 && futuri > 0 => (
+          Colors.blue.shade700,
+          Icons.event_outlined,
+          'in corso nulla · ${avvisi(futuri)} in programma'
+        ),
       final s when !s.hasDeviations => (
           Colors.green.shade700,
           Icons.check_circle_outline,
@@ -167,14 +178,13 @@ class _LineTile extends StatelessWidget {
       final s when skipped > 0 => (
           scheme.error,
           Icons.error_outline,
-          '${s.reports.length} ${s.reports.length == 1 ? "avviso" : "avvisi"} · '
-              '$skipped ${skipped == 1 ? "fermata non servita" : "fermate non servite"}'
+          '${avvisi(attivi)} · $skipped '
+              '${skipped == 1 ? "fermata non servita" : "fermate non servite"}'
         ),
       final s => (
           Colors.orange.shade800,
           Icons.warning_amber_outlined,
-          '${s.reports.length} ${s.reports.length == 1 ? "avviso" : "avvisi"} · '
-              'fermate tutte servite'
+          '${avvisi(attivi)} · fermate tutte servite'
         ),
     };
 
@@ -203,7 +213,10 @@ class _LineTile extends StatelessWidget {
           Icon(icon, size: 16, color: colour),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(label,
+            child: Text(
+                futuri > 0 && attivi > 0
+                    ? '$label · +$futuri in programma'
+                    : label,
                 style: TextStyle(color: colour),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),

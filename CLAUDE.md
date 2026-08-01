@@ -73,6 +73,9 @@ Non sono stime. Se li rimetti in discussione, rimisurali.
 | Estrazione LLM (nemotron-3-super:free) | 34/34, **0 toponimi inventati** | `eval_extractor.dart` |
 | Quota gratuita OpenRouter | **50 richieste/giorno** in totale | misurato sul campo |
 | Avvisi di **sola fermata sospesa** | **14 su 198** | conteggio sul feed |
+| Variazioni **non ancora iniziate** (tabella) | **9 su 47** (19%) | misura 01/08 |
+| `active_period.start` negli alert | **161 su 161 nel passato** | idem |
+| Data d'inizio estraibile a regex dal testo | **40%** — troppo poco | idem |
 | Rientro non nominato negli avvisi | **24 su 28** | fixture annotate |
 | Ultima via nominata: distanza dal percorso | mediana **1 m**, 21/22 ≤ 100 m | misura dedicata |
 
@@ -135,6 +138,11 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   perché il flusso passava dal ricostruire un percorso che lì non esiste.
   Un codice fermata lo prende una regex: niente LLM, niente geocoding,
   niente routing. Vale anche a LLM spento, ed è proprio quando serve.
+- **`active_period.start` degli alert è l'ora di PUBBLICAZIONE**, non
+  l'inizio della variazione. Misurato l'01/08: 161 alert su 161 hanno lo
+  start nel passato, e la 65 — il cui testo dice "dalle 8:00 di lunedì 3"
+  — risultava già attiva. La data vera d'inizio la dà solo la tabella
+  `/cms/variazioni`, che ce l'ha in colonna.
 - **Il rientro va cercato A VALLE dello stacco.** Una linea puo' passare
   due volte vicino alla stessa via: senza il vincolo si sceglie il
   passaggio già fatto. Con la direzione sbagliata la deduzione finisce a
@@ -170,17 +178,22 @@ Per non fraintendere:
   pagata su un altro progetto). Servirebbe un cron esterno — GitHub Actions
   è gratis e basta.
 - **distanze a piedi in linea d'aria**, non reali. L'interfaccia lo dichiara.
+- **non deduplica le due fonti.** La stessa deviazione può arrivare sia
+  dall'alert sia dalla tabella e comparire due volte — con l'aggravante
+  che solo la seconda porta la data d'inizio giusta.
 - **dentro una direzione usa solo la variante principale.** Una deviazione
   che riguardasse la sola corsa limitata verrebbe calcolata sul percorso
   intero — lo stesso errore corretto un livello più in alto.
-- **il Segnale A è ancora senza risposta**: servono più giorni di diff. Un
+- **il Segnale A ha una prima risposta** (01/08: 7 cambiamenti su 16 CD,
+  65, 73, uno dei quali combacia con un avviso dello stesso giorno), ma
+  servono più giorni per la latenza. Un
   LaunchAgent gira alle 05:00 (`com.tommaso.gtt-deviazioni.snapshot`), e
   una routine cloud esiste ma non ha mai girato con successo.
 
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 168 test, devono passare tutti
+cd app && flutter test          # 173 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
 ```
 
@@ -219,4 +232,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 168 test, 26 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 173 test, 28 commit.*

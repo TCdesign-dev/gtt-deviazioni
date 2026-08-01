@@ -213,4 +213,46 @@ void main() {
       expect(status.allSkippedStops, isEmpty);
     });
   });
+
+  group('Programmata ma non ancora attiva', () {
+    // MISURATO (01/08/2026): 9 righe su 47 di /cms/variazioni partono in
+    // futuro, una a 23 giorni. Nel feed protobuf 0 su 162. Dire "la tua
+    // fermata non e' servita" per il 24 agosto e' rispondere a un'altra
+    // domanda.
+    final oggi = DateTime(2026, 8, 1, 14, 30);
+
+    RawNotice avviso(DateTime? da) => RawNotice(
+        id: 'n',
+        source: NoticeSource.webVariazioni,
+        text: 'Linea 4 deviata.',
+        validFrom: da,
+        sourceUrl: '');
+
+    test('parte fra tre settimane: non e attiva', () {
+      expect(avviso(DateTime(2026, 8, 24)).startsAfter(oggi), isTrue);
+      expect(avviso(DateTime(2026, 8, 24)).daysUntilStart(oggi), equals(23));
+    });
+
+    test('parte OGGI: e attiva, anche se validFrom e a mezzanotte', () {
+      // La trappola: 01/08 00:00 e' prima di adesso, ma la variazione di
+      // oggi e' in corso. Si confrontano le date, non gli istanti.
+      final n = avviso(DateTime(2026, 8, 1));
+      expect(n.startsAfter(oggi), isFalse);
+      expect(n.daysUntilStart(oggi), isNull);
+    });
+
+    test('parte domani: non e ancora attiva', () {
+      expect(avviso(DateTime(2026, 8, 2)).daysUntilStart(oggi), equals(1));
+    });
+
+    test('cominciata a luglio: attiva', () {
+      expect(avviso(DateTime(2026, 7, 15)).startsAfter(oggi), isFalse);
+    });
+
+    test('senza data si considera in corso, non si indovina', () {
+      // Il feed protobuf non sempre da' il periodo. Nasconderla perche'
+      // non sappiamo quando parte sarebbe il danno peggiore.
+      expect(avviso(null).startsAfter(oggi), isFalse);
+    });
+  });
 }

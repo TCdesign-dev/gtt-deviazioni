@@ -200,6 +200,17 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **Apple pretende la stringa anche per i permessi che non chiedi.**
+  L'analisi statica del caricamento (avviso 90683) guarda le API
+  *referenziate* dal binario, non quelle usate: `geolocator` contiene una
+  chiamata a `requestAlwaysAuthorization` in un ramo che con
+  `NSLocationWhenInUseUsageDescription` presente non viene mai eseguito, e
+  tanto basta a pretendere `NSLocationAlwaysAndWhenInUseUsageDescription`.
+  Il plugin ha il flag `BYPASS_PERMISSION_LOCATION_ALWAYS` per compilare
+  via quel codice, ma si iniettava dal `Podfile` — e qui Flutter usa
+  **Swift Package Manager**, dove non si passano define alle dipendenze.
+  Quindi la chiave c'è, col testo dell'altra. Verificato che il permesso
+  richiesto resti «quando utilizzi l'app»: la finestra è identica.
 - **Chi mette qualcosa sopra le schermate deve togliere il padding che
   ha consumato.** La striscia dell'osservazione si prende la barra di
   stato, ma ogni `AppBar` sotto continuava a spaziarsi come se fosse lei

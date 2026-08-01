@@ -1,151 +1,289 @@
 # Deviazioni GTT
 
-Sei alla fermata. Sul sito di GTT c'è scritto:
+Un'app per iOS e Android che trasforma gli avvisi di deviazione di GTT
+(Torino) — pubblicati in prosa — in geometria georiferita, e risponde a
+una domanda sola: **la mia fermata è ancora servita?**
 
-> *Da via Asinari di Bernezzo angolo corso Monte Grappa, per via Asinari di
-> Bernezzo, piazza Chironi, via Medici, corso Lecce, via Lessona, segue
-> percorso normale.*
+L'avviso tipico si presenta così:
 
-E tu volevi sapere una cosa sola: **il bus passa ancora di qui?**
+> *Linea 65 deviata in direzione corso Bolzano dalle 8:00 di lunedì 3 sino
+> alle 18:00 di venerdì 7 agosto 2026. Da via Asinari di Bernezzo angolo
+> corso Monte Grappa, per via Asinari di Bernezzo, piazza Chironi, via
+> Medici, corso Lecce, via Lessona, segue percorso normale.*
 
-Questa app legge quel testo e risponde a quella domanda. Per le linee che
-prendi tu, quando glielo chiedi.
+È un elenco di vie. Chi aspetta il bus sta a una fermata, non su una via, e
+per sapere se quella fermata è ancora servita deve ricostruire il percorso
+a mente su una mappa che non ha davanti. L'app fa quel lavoro: geocodifica
+i toponimi, calcola il percorso deviato sulla rete stradale reale, lo
+confronta con il percorso ufficiale del GTFS e determina quali fermate
+restano fuori.
+
+Non c'è nessun server. Gli orari e tutti i calcoli stanno sul telefono.
 
 <p align="center">
   <img src="docs/img/linea-65.png" width="330"
-       alt="La schermata della linea 65: la mappa con le due direzioni e le
-            fermate, e la scritta «Adesso il percorso è regolare»">
+       alt="Schermata della linea 65: la mappa con le due direzioni e le
+            fermate, la posizione dell'utente, e l'esito «Adesso il percorso
+            è regolare»">
 </p>
 
-Flutter, iOS e Android. Niente server: gli orari e tutti i calcoli stanno
-sul telefono. Progetto personale, non ha niente a che vedere con GTT.
+> Progetto personale. Non è affiliato a GTT né approvato da GTT.
 
 ---
 
-## La cosa che di solito non funziona
+## Il problema tecnico centrale
 
-Trasformare quelle righe di prosa in una mappa è il punto in cui questi
-progetti muoiono. «Via Roma» a Torino sono decine di posti, e un geocoder
-lasciato libero ti manda a Collegno con la faccia seria.
+Il passaggio da testo a geometria è il punto in cui questi progetti si
+fermano. Un geocoder interrogato liberamente con «via Roma» restituisce
+decine di risultati in tutto il Piemonte, e la polilinea che ne esce non ha
+alcun rapporto con il percorso reale della linea.
 
-Il trucco è non lasciarlo libero: i toponimi si cercano **solo entro un
-chilometro dal percorso di quella linea lì**. Il vincolo fa quasi tutto il
-lavoro — sui toponimi veri degli avvisi di GTT la risoluzione è 150 su 150,
-e le vie estranee alla linea finiscono a 1,3 km o più, cioè si scartano da
-sole.
+La soluzione adottata è il **geocoding vincolato**: i toponimi si cercano
+esclusivamente entro un chilometro dal percorso ufficiale di quella singola
+linea. È questo vincolo — non il modello linguistico, non l'euristica — a
+rendere affidabile l'intera catena.
 
-Poi il percorso ricostruito passa cinque prove prima di essere disegnato.
-Se una non torna, l'app te lo dice e ti mostra il testo di GTT. Meglio
-nessuna mappa che una mappa sbagliata: un falso positivo ti fa camminare
-ottocento metri per niente, e la volta dopo non ci credi più.
+Le misure sui dati reali di GTT (31 luglio 2026):
 
-## Cosa ci fai
+| Grandezza | Valore |
+|---|---|
+| Toponimi risolti correttamente | **150 / 150** entro 2 km |
+| Distanza massima di un toponimo corretto dal percorso | **800 m** |
+| Distanza minima di una via estranea alla linea | **1342 m** |
+| Estrazione strutturata dal testo (LLM) | **34 / 34**, zero toponimi inventati |
+| Copertura della tabella alias dei nomi di linea | **98,4 %** (63/64) |
 
-**Le fermate che saltano, e dove andare al loro posto.** È la cosa che
-serve davvero e che GTT non dice quasi mai. Tu non stai su una via, stai a
-una fermata.
+Il margine fra 800 m e 1342 m è ciò che rende il filtro possibile: un
+toponimo corretto e uno estraneo si separano nettamente, e il buffer di
+1 km cade in mezzo. Un buffer da 2 km lascia entrare rumore; uno da 500 m
+scarta vie legittime, perché una deviazione per definizione si allontana.
 
-**Guardare dove sono i mezzi adesso.** Per un minuto, per dieci, o finché
-non ti stufi, con i bus che si muovono sulla mappa. Serve a una cosa che
-nessun'altra fonte sa dirti: se la deviazione **è già finita**. GTT
-annuncia quando cominciano, quasi mai quando smettono.
+Il percorso ricostruito supera poi **cinque validazioni** prima di essere
+disegnato. Se una fallisce, l'app dichiara l'incertezza e mostra il testo
+originale di GTT. La regola è esplicita: *meglio nessuna mappa che una
+mappa sbagliata* — un falso positivo fa camminare l'utente ottocento metri
+inutilmente e distrugge la fiducia nello strumento.
 
-**Sapere cosa comincerà.** Un quinto delle variazioni pubblicate non è
-ancora in vigore. L'app le tiene da parte — «comincia dopodomani» — invece
-di allarmarti oggi per il 24 agosto.
+## Architettura
 
-E in fondo a ogni scheda c'è sempre **il testo originale di GTT**. Se il
-sistema sbaglia, il dato grezzo è lì e te lo leggi da solo.
+Il sistema è organizzato attorno a un vincolo strutturale:
 
-## Cosa non ci fai
+> **`app/lib/core/` è Dart puro.** Nessun `import 'package:flutter/…'`.
 
-Meglio dirlo subito che farlo scoprire:
+Da questo discende il resto. La logica si esegue e si testa in millisecondi
+senza simulatore, si può invocare da riga di comando, e l'interfaccia è
+sostituibile — con un'altra UI, con uno script, con un'implementazione
+nativa — senza toccare il calcolo. Se un file di `core/` avesse bisogno di
+Flutter, quel file sarebbe nel posto sbagliato.
 
-**Non ti manda notifiche.** iOS non regge il polling in background, e
-metterci un server sarebbe tradire il resto del progetto. Devi aprirla tu.
+```
+app/lib/
+├── core/                       ← Dart puro, zero dipendenze da Flutter
+│   ├── config.dart             ← tutte le soglie tarabili, in un posto solo
+│   ├── models/                 ← tipi di dominio, senza comportamento di rete
+│   ├── geo/
+│   │   ├── projection.dart     ← gradi ↔ metri
+│   │   ├── geometry.dart       ← distanze, proiezioni, Fréchet, densify
+│   │   └── polyline.dart       ← codifica Google polyline
+│   ├── gtfs/                   ← scarico e indicizzazione del GTFS statico
+│   ├── sources/                ← una classe per fonte GTT, intercambiabili
+│   ├── llm/                    ← client OpenAI-compatibile
+│   └── pipeline/               ← un passaggio del calcolo per file
+│       ├── notice_merge.dart   ← le due fonti → un avviso solo
+│       ├── line_resolver.dart  ← «55» → 55U (tabella alias)
+│       ├── extractor.dart      ← testo → JSON strutturato (LLM)
+│       ├── geocoder.dart       ← toponimo → coordinate, VINCOLATO
+│       ├── route_builder.dart  ← vie → polilinea (Valhalla) + validazioni
+│       ├── rejoin_inference.dart ← dove rientra, quando GTT non lo dice
+│       ├── stop_impact.dart    ← quali fermate saltano, e le alternative
+│       └── vehicle_watch.dart  ← osservazione dei mezzi in tempo reale
+├── data/                       ← persistenza, orchestrazione, posizione
+└── ui/                         ← schermate e mappa
+```
 
-**Le distanze alle fermate alternative sono in linea d'aria**, non a piedi.
-L'app lo scrive ogni volta, perché a Torino un fiume o una ferrovia
-cambiano tutto.
+### Il flusso
 
-**Dentro una direzione guarda solo la variante principale.** Se una
-deviazione riguardasse la sola corsa limitata, il calcolo verrebbe fatto
-sul percorso intero.
+```
+avvisi GTT (due fonti)
+        │
+        ▼
+  unione dei doppioni ......... 31 coppie su 189 avvisi
+        │
+        ▼
+  estrazione LLM .............. testo → JSON (vie, direzione, tipo)
+        │
+        ▼
+  geocoding vincolato ......... toponimi → coordinate, entro 1 km dalla linea
+        │
+        ▼
+  routing bus (Valhalla) ...... coordinate → polilinea sulla rete reale
+        │
+        ▼
+  cinque validazioni .......... o si dichiara l'incertezza
+        │
+        ▼
+  impatto sulle fermate ....... quali saltano, dove andare al loro posto
+```
 
-**Non indovina mai.** Se un toponimo non si risolve, lo dice. Se non ha
-visto nessun mezzo, dice «non ho visto nessun mezzo» e non «va tutto
-bene». «Non lo so» è una risposta, e va detta come tale.
+In parallelo, su richiesta, l'**osservazione dei mezzi**: si interroga il
+feed delle posizioni per la durata scelta e si confrontano le tracce con
+tutte le varianti di percorso della linea. Risponde a una domanda che
+nessun'altra fonte copre — se la deviazione **è già finita** — perché GTT
+annuncia l'inizio delle deviazioni ma quasi mai la fine.
 
-## Provarla
+### Perché la pipeline è divisa così
 
-Serve [Flutter](https://docs.flutter.dev/get-started/install) (Dart ≥ 3.12).
+Ogni file di `pipeline/` è un passaggio del ragionamento ed è sostituibile
+isolatamente. Se Photon cessa il servizio si riscrive `geocoder.dart`; se
+Valhalla pubblico sparisce, `route_builder.dart`; per cambiare modello
+linguistico, `extractor.dart`. Nessun altro file se ne accorge.
+
+`config.dart` esiste perché quasi tutte le soglie del sistema vanno tarate
+sul campo. I valori marcati `MISURATO` provengono da rilevazioni reali, e
+in **sette casi contraddicono** le stime del progetto originale — fra cui
+la soglia di fuori-rotta (50 m misurati contro 80 stimati) e il buffer del
+geocoding (1 km contro 2).
+
+### Fonti dati
+
+| Fonte | Uso | Nota |
+|---|---|---|
+| GTFS statico GTT | percorsi, fermate, orari | rigenerato ogni giorno alle 04:00, CC-BY |
+| `alerts.aspx` (GTFS-RT) | avvisi | porta il `route_id` canonico nel 96,7 % dei casi |
+| `/cms/variazioni` (HTML) | avvisi | è l'unica fonte con le **date d'inizio reali** |
+| `vehicle_position.aspx` | posizioni dei mezzi | si spegne di notte, il servizio no |
+| Photon | geocoding | nessuna chiave richiesta |
+| Valhalla (FOSSGIS) | routing `costing: bus` | polilinee a precisione 6 |
+| OpenRouter | estrazione dal testo | chiave dell'utente, sul dispositivo |
+
+L'OTP di GTT — che il progetto originale indicava come fonte primaria — è
+stato scartato dopo verifica: espone un build più vecchio, i cui `trip_id`
+non esistono nel feed corrente, e a cui mancano sette linee.
+
+## Funzionalità
+
+**Fermate non servite e alternative.** L'output più utile e quello che GTT
+non fornisce quasi mai. Le alternative privilegiano le fermate ancora
+servite dalla stessa linea, così da non richiedere un cambio di mezzo.
+
+**Mappa.** Percorso normale di entrambe le direzioni con tonalità distinte,
+tratto deviato in rosso, fermate toccabili, fermate saltate cerchiate, e la
+posizione dell'utente su richiesta.
+
+**Osservazione dei mezzi in tempo reale.** Da un minuto a dieci, oppure in
+continuo, con i veicoli che si aggiornano sulla mappa.
+
+**Distinzione fra ciò che è in corso e ciò che comincerà.** Il 19 % delle
+variazioni pubblicate non è ancora in vigore; l'app le tiene separate
+invece di segnalarle come attive.
+
+**Controllo per singola linea.** La quota gratuita è di cinquanta richieste
+al giorno, quindi ricontrollare l'intera watchlist per sapere di una linea
+sola è uno spreco misurabile.
+
+**Testo originale sempre visibile.** In fondo a ogni scheda, così che il
+dato grezzo resti disponibile anche quando il sistema sbaglia.
+
+## Limiti noti
+
+**Nessuna notifica.** iOS non regge il polling in background e introdurre
+un server contraddirebbe l'impostazione del progetto. L'app va aperta.
+
+**Distanze in linea d'aria.** Le alternative alle fermate saltate non
+usano routing pedonale; l'interfaccia lo dichiara esplicitamente, perché a
+Torino un fiume o una ferrovia cambiano radicalmente il percorso a piedi.
+
+**Una sola variante per direzione.** Il calcolo usa la variante principale;
+una deviazione che riguardasse esclusivamente una corsa limitata verrebbe
+valutata sul percorso intero.
+
+**Data d'inizio inaffidabile dal feed protobuf.** `active_period.start`
+degli alert è l'ora di pubblicazione, non l'inizio della variazione (161
+casi su 161 con start nel passato). La data corretta arriva solo dalla
+tabella HTML, e l'unione delle due fonti serve anche a questo.
+
+## Installazione
+
+Requisiti: [Flutter](https://docs.flutter.dev/get-started/install), Dart ≥ 3.12.
 
 ```bash
 git clone https://github.com/TCdesign-dev/gtt-deviazioni.git
 cd gtt-deviazioni/app && flutter pub get && flutter run
 ```
 
-Al primo avvio scarica gli orari di GTT — 24 MB — e poi non ci pensa più
-per una settimana. Aggiungi le linee che prendi e tocca **Controlla**.
+Al primo avvio l'app scarica il GTFS di GTT (24 MB) e lo riusa per una
+settimana. Si aggiungono le linee di interesse e si tocca **Controlla**.
 
-Per leggere il testo degli avvisi serve una chiave
-[OpenRouter](https://openrouter.ai/keys): si incolla nelle impostazioni e
-**resta sul telefono**. Il modello predefinito è gratuito, con cinquanta
-richieste al giorno — ed è il motivo per cui puoi controllare una linea
-sola invece di tutte.
+L'estrazione dal testo richiede una chiave
+[OpenRouter](https://openrouter.ai/keys), inserita nelle impostazioni e
+conservata **solo sul dispositivo**. Il modello predefinito è gratuito, con
+un limite di cinquanta richieste al giorno.
 
-Su **Android** fai `flutter build apk` e l'hai finita: niente licenze,
-niente store. Su **iOS** con un Apple ID gratuito la firma scade dopo sette
-giorni; per darla ad altri serve il programma a pagamento di Apple.
+**Android**: `flutter build apk`, nessuna licenza da sviluppatore richiesta.
+**iOS**: con un Apple ID gratuito la firma scade dopo sette giorni; la
+distribuzione a terzi richiede il programma a pagamento di Apple.
 
-## Se ci vuoi mettere le mani
+### Privacy
 
-C'è una regola sola, e regge tutto il resto:
+La posizione dell'utente, se attivata, **non lascia il dispositivo**: non
+viene salvata e non compare in alcuna richiesta di rete. I servizi esterni
+ricevono i toponimi degli avvisi e il percorso della linea, mai la
+posizione. Il permesso viene richiesto al tocco del pulsante, non
+all'apertura della schermata.
 
-> **`app/lib/core/` è Dart puro.** Nemmeno un `import 'package:flutter/…'`.
-
-Da lì viene il resto: la logica si testa in millisecondi senza simulatore,
-e l'interfaccia si può buttare via e rifare senza toccarla.
+## Sviluppo
 
 ```bash
 cd app && flutter test      # 206 test
 cd app && flutter analyze
 ```
 
-I test sulle fonti girano **offline su dati veri**: il feed e la pagina di
-GTT del 31 luglio 2026 stanno in `app/test/fixtures/`.
+I test sulle fonti girano **offline su dati reali**: il feed protobuf e la
+pagina HTML di GTT del 31 luglio 2026 sono conservati in
+`app/test/fixtures/`. I test sul GTFS si saltano automaticamente se i file
+non sono presenti.
 
-Prima di cambiare qualcosa, leggi **[`CLAUDE.md`](CLAUDE.md)**. Non è
-documentazione di cortesia: ci sono le misure vere, il perché delle scelte,
-i sette punti in cui il progetto originale si è rivelato sbagliato, e le
-trappole che sono già costate tempo — quella volta che il confronto per
-sottostringhe ha fatto scattare «lavori **strada**li» sul capolinea
-«**STRADA** del Drosso», per dire.
+Strumenti di misura, che interrogano i servizi veri:
 
-Due cose che vale la pena sapere prima di aprire una PR:
+```bash
+cd app && dart run tool/check_pipeline_live.dart     # catena completa
+cd app && dart run tool/check_merge_offline.dart     # unione delle fonti
+```
+
+**Prima di modificare qualcosa, leggere [`CLAUDE.md`](CLAUDE.md).** Contiene
+ciò che non sta nel codice: le misure e il metodo con cui sono state
+ottenute, il ragionamento dietro le scelte, i sette punti in cui la
+specifica originale è stata smentita dai dati, e le trappole già pagate —
+per esempio il confronto per sottostringhe che faceva scattare «lavori
+**strada**li» sul capolinea «**STRADA** del Drosso», assegnando l'avviso
+alla direzione sbagliata.
+
+Due criteri per i contributi:
 
 1. **Le soglie si tarano misurando.** Gli script in `scripts/` e
-   `app/tool/` servono a questo. Se un numero non ti torna, rimisuralo — ma
-   rimisuralo davvero.
-2. **Dichiarare l'incertezza non è una sconfitta.** È la ragione per cui
-   questa cosa si può usare.
+   `app/tool/` esistono per questo. Un numero rimesso in discussione va
+   rimisurato, non stimato.
+2. **Dichiarare l'incertezza è un requisito, non un ripiego.** «Non lo so»
+   è una risposta valida e va comunicata come tale.
 
-Le altre carte: [`app/ARCHITETTURA.md`](app/ARCHITETTURA.md) per i moduli,
-[`docs/FASE-0-RISULTATI.md`](docs/FASE-0-RISULTATI.md) per le misure sulle
-fonti di GTT, e [`docs/`](docs/) per la specifica originale — che però non
-è la verità, vedi sopra.
+Altra documentazione: [`app/ARCHITETTURA.md`](app/ARCHITETTURA.md) per lo
+stato dei moduli, [`docs/FASE-0-RISULTATI.md`](docs/FASE-0-RISULTATI.md)
+per le misure sulle fonti, [`docs/`](docs/) per la specifica originale — che
+va letta sapendo che sette dei suoi assunti si sono rivelati falsi.
 
-## Grazie a
+## Licenze e attribuzioni
 
-I dati sono di **GTT S.p.A.**, [open data](https://www.gtt.to.it/cms/openday/open-data)
-in **CC-BY**: vanno citati, ed è il minimo. Le mappe sono di
-**OpenStreetMap** (ODbL), il routing lo fa **Valhalla** ospitato da
-[FOSSGIS](https://valhalla1.openstreetmap.de/), gli indirizzi
-**[Photon](https://photon.komoot.io/)** di Komoot.
+- Dati di trasporto: **GTT S.p.A.**,
+  [open data](https://www.gtt.to.it/cms/openday/open-data), licenza
+  **CC-BY** — l'attribuzione è obbligatoria.
+- Cartografia: **OpenStreetMap**, licenza ODbL.
+- Routing: **Valhalla** ospitato da [FOSSGIS](https://valhalla1.openstreetmap.de/).
+- Geocoding: **[Photon](https://photon.komoot.io/)** di Komoot.
 
-Photon e Valhalla sono servizi offerti per cortesia. L'app fa pause fra le
-chiamate, si presenta con uno User-Agent riconoscibile e ha sempre un
-ripiego se cadono. Se ci costruisci sopra qualcosa di serio, ospitateli.
+Photon e Valhalla sono servizi offerti gratuitamente alla comunità. L'app
+introduce pause fra le chiamate, si identifica con uno User-Agent
+riconoscibile e prevede sempre un comportamento di ripiego. Un uso
+intensivo richiede un'istanza propria.
 
-Il codice è **MIT** — vedi [`LICENSE`](LICENSE). Vale per il codice, non
-per i dati.
+Il codice è distribuito con licenza **MIT** — vedi [`LICENSE`](LICENSE). La
+licenza riguarda il codice, non i dati.

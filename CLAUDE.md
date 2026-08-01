@@ -200,6 +200,12 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **I `Tooltip` non funzionano nel `builder` di `MaterialApp`.** Il
+  `builder` avvolge il Navigator, e l'`Overlay` che i tooltip pretendono
+  lo fornisce il Navigator: quindi si sta *sopra* di esso. Con `tooltip:`
+  sul pulsante della striscia l'app si apriva sulla schermata rossa —
+  `No Overlay widget found`. Si usa `Semantics(label: …)`, che dà
+  l'etichetta ai lettori di schermo senza pretendere nulla.
 - **Lo stato che deve sopravvivere alla navigazione non va nella
   schermata.** L'osservazione dei mezzi viveva in `_LineScreenState` e
   moriva al primo `Navigator.pop`: uno la faceva partire, andava a

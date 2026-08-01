@@ -74,6 +74,32 @@ class AppRepository extends ChangeNotifier {
   /// La linea che si sta osservando adesso. null se nessuna.
   String? watchingRouteId;
 
+  /// Da quando si sta guardando, e per quanto era stato chiesto.
+  ///
+  /// Servono a dire "ancora 3 min" invece di "5 min": la durata scelta
+  /// non dice niente di utile mentre gira, l'hai scelta tu poco fa.
+  DateTime? watchStartedAt;
+  Duration? watchMaxDuration;
+
+  /// L'osservazione senza fine: si mostra il tempo trascorso, non quello
+  /// che manca, perche' non manca niente.
+  bool get watchIsContinuous =>
+      watchMaxDuration != null && watchMaxDuration! >= const Duration(hours: 1);
+
+  /// Quanto manca. null in modalita' continua o se non si sta guardando.
+  Duration? get watchRemaining {
+    final da = watchStartedAt;
+    final max = watchMaxDuration;
+    if (da == null || max == null || watchIsContinuous) return null;
+    final resta = max - DateTime.now().difference(da);
+    return resta.isNegative ? Duration.zero : resta;
+  }
+
+  /// Da quanto si sta guardando.
+  Duration? get watchElapsed => watchStartedAt == null
+      ? null
+      : DateTime.now().difference(watchStartedAt!);
+
   int watchSamples = 0;
   List<VehicleTrack> liveTracks = const [];
   String? watchError;
@@ -99,6 +125,8 @@ class AppRepository extends ChangeNotifier {
     if (watchingRouteId != null) stopWatch();
 
     watchingRouteId = line.routeId;
+    watchStartedAt = DateTime.now();
+    watchMaxDuration = maxDuration;
     _stopWatchRequested = false;
     watchSamples = 0;
     liveTracks = const [];
@@ -136,7 +164,11 @@ class AppRepository extends ChangeNotifier {
     } on Object catch (e) {
       if (watchingRouteId == line.routeId) watchError = '$e';
     } finally {
-      if (watchingRouteId == line.routeId) watchingRouteId = null;
+      if (watchingRouteId == line.routeId) {
+        watchingRouteId = null;
+        watchStartedAt = null;
+        watchMaxDuration = null;
+      }
       notifyListeners();
     }
   }
@@ -144,8 +176,14 @@ class AppRepository extends ChangeNotifier {
   void stopWatch() {
     _stopWatchRequested = true;
     watchingRouteId = null;
+    watchStartedAt = null;
+    watchMaxDuration = null;
     notifyListeners();
   }
+
+  /// La linea che si sta osservando, per aprirla da un punto qualsiasi.
+  TransitLine? get watchingLine =>
+      watchingRouteId == null ? null : index?.lines[watchingRouteId];
 
   /// Quando una linea e' stata controllata l'ultima volta.
   ///

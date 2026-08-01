@@ -40,6 +40,12 @@ avviso GTT ──► LLM: testo → JSON ──► geocoding VINCOLATO al percor
                         quali fermate saltano + alternative + mappa
 ```
 
+Con una **scorciatoia**: se l'avviso nomina solo delle fermate sospese
+("Fermata 3445 Sabotino sospesa") non c'è nessun percorso da ricostruire.
+Il codice si legge dal testo e si cerca nel GTFS — nessun LLM, nessuna
+rete oltre a quella già fatta. È il ramo di massima confidenza, e l'unico
+che funziona anche a quota esaurita.
+
 In parallelo, su richiesta: **osservazione dei mezzi** per qualche minuto,
 che dice se la deviazione è in corso o — cosa che nessun'altra fonte sa —
 se è **già finita**.
@@ -64,6 +70,7 @@ Non sono stime. Se li rimetti in discussione, rimisurali.
 | Copertura alias nomi linea | **98,4%** (63/64) | test Dart |
 | Estrazione LLM (nemotron-3-super:free) | 34/34, **0 toponimi inventati** | `eval_extractor.dart` |
 | Quota gratuita OpenRouter | **50 richieste/giorno** in totale | misurato sul campo |
+| Avvisi di **sola fermata sospesa** | **14 su 198** | conteggio sul feed |
 | Rientro non nominato negli avvisi | **24 su 28** | fixture annotate |
 | Ultima via nominata: distanza dal percorso | mediana **1 m**, 21/22 ≤ 100 m | misura dedicata |
 
@@ -121,6 +128,11 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
 - **`direction: 0` fisso** faceva calcolare le fermate saltate sempre
   sull'andata, anche per gli avvisi che riguardano il ritorno. GTT scrive
   avvisi *per direzione*.
+- **Non tutto deve passare dalla geometria.** Il caso più *certo* di tutti
+  — "Fermata 3445 Sabotino sospesa", il numero scritto da GTT — si perdeva
+  perché il flusso passava dal ricostruire un percorso che lì non esiste.
+  Un codice fermata lo prende una regex: niente LLM, niente geocoding,
+  niente routing. Vale anche a LLM spento, ed è proprio quando serve.
 - **Il rientro va cercato A VALLE dello stacco.** Una linea puo' passare
   due volte vicino alla stessa via: senza il vincolo si sceglie il
   passaggio già fatto. Con la direzione sbagliata la deduzione finisce a
@@ -166,7 +178,7 @@ Per non fraintendere:
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 145 test, devono passare tutti
+cd app && flutter test          # 168 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
 ```
 
@@ -205,4 +217,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 145 test, 25 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 168 test, 26 commit.*

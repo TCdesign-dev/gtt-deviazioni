@@ -185,15 +185,66 @@ class StopImpactAnalyzer {
     );
   }
 
+  /// Solo le fermate che GTT ha dichiarato sospese, senza deviazione.
+  ///
+  /// MISURATO: 14 avvisi su 198 dicono soltanto questo — "Fermata 3447
+  /// Sabotino sospesa" — senza cambiare percorso. Il codice sta nel testo
+  /// e si estrae con una regex; farlo passare dalla geometria significava
+  /// perderlo, perche' senza vie nominate non c'e' niente da ricostruire.
+  ///
+  /// **E' il caso di massima confidenza del sistema**: nessun LLM per la
+  /// geometria, nessun geocoding, nessun routing. GTT nomina un codice
+  /// fermata e lo si cerca nel GTFS. Zero inferenza, zero margine di
+  /// errore geometrico.
+  StopImpactResult declaredOnly({
+    required RouteShape officialRoute,
+    required Set<String> declaredCodes,
+  }) {
+    if (declaredCodes.isEmpty) {
+      return const StopImpactResult(
+          impacts: [], affectedFromMeters: 0, affectedToMeters: 0);
+    }
+
+    final official = officialRoute.meters;
+    final impacts = <StopImpact>[];
+    var from = double.infinity;
+    var to = 0.0;
+
+    for (final stop in officialRoute.stops) {
+      if (stop.code == null || !declaredCodes.contains(stop.code)) continue;
+      final along =
+          Geometry.projectOnPolyline(stop.position.meters, official).alongMeters;
+      if (along < from) from = along;
+      if (along > to) to = along;
+      impacts.add(StopImpact(
+        stop: stop,
+        status: StopStatus.declaredSuspended,
+        alternatives: _alternativesFor(stop, officialRoute, null,
+            alsoSkipped: declaredCodes),
+      ));
+    }
+
+    return StopImpactResult(
+      impacts: impacts,
+      affectedFromMeters: impacts.isEmpty ? 0 : from,
+      affectedToMeters: impacts.isEmpty ? 0 : to,
+    );
+  }
+
   /// Dove puo' andare chi usava una fermata saltata.
   ///
   /// Ordine di preferenza: prima le fermate ancora servite dalla STESSA
   /// linea, cosi' non deve cambiare mezzo; poi le altre entro il raggio.
+  ///
+  /// [deviatedRoute] null quando non c'e' deviazione (sole fermate
+  /// sospese): in quel caso una fermata della stessa linea va bene, a meno
+  /// che non sia sospesa anche lei — ed e' [alsoSkipped] a dirlo.
   List<StopAlternative> _alternativesFor(
     TransitStop skipped,
     RouteShape officialRoute,
-    List<Point> deviatedRoute,
-  ) {
+    List<Point>? deviatedRoute, {
+    Set<String> alsoSkipped = const {},
+  }) {
     final nearby = index.stopsNear(skipped.position,
         radiusMeters: GttConfig.alternativeStopMeters);
 
@@ -203,12 +254,17 @@ class StopImpactAnalyzer {
     for (final n in nearby) {
       if (n.stop.id == skipped.id) continue;
 
+      // Mandare l'utente a una fermata sospesa anche lei e' peggio che non
+      // proporre nulla.
+      if (n.stop.code != null && alsoSkipped.contains(n.stop.code)) continue;
+
       final onSameLine = sameLineIds.contains(n.stop.id);
       // Una fermata della stessa linea vale come alternativa solo se il
       // percorso deviato ci passa davvero accanto: altrimenti e' saltata
-      // anche lei e mandarci l'utente sarebbe un errore.
-      if (onSameLine) {
-        final d = Geometry.pointToPolyline(n.stop.position.meters, deviatedRoute);
+      // anche lei. Senza deviazione il controllo non serve.
+      if (onSameLine && deviatedRoute != null) {
+        final d =
+            Geometry.pointToPolyline(n.stop.position.meters, deviatedRoute);
         if (d > GttConfig.stopSkippedMeters) continue;
       }
 

@@ -265,6 +265,9 @@ class DeviationService {
   /// Non basta dire "errore": alcune cause sono azionabili — la quota
   /// giornaliera si azzera, una chiave sbagliata si corregge — e altre no.
   /// Chi legge deve capire se puo' fare qualcosa o solo aspettare.
+  static String _lowerFirst(String s) =>
+      s.isEmpty ? s : s[0].toLowerCase() + s.substring(1);
+
   static String explainExtractionFailure(ExtractionResult r) {
     final detail = r.detail ?? '';
     if (detail.contains('free-models-per-day')) {
@@ -307,6 +310,28 @@ class DeviationService {
     // 1. Testo -> struttura.
     final extraction = await _extractor.extract(notice);
     if (!extraction.isUsable) {
+      // L'LLM non ha risposto — quota finita, rete, servizio giu'. Ma se
+      // GTT ha scritto un numero di fermata, quel numero sta nel testo e
+      // lo prende una regex: non serve nessun modello per leggerlo.
+      // Sarebbe assurdo perdere il dato piu' certo che abbiamo proprio
+      // quando tutto il resto non funziona.
+      final impact = _impact.declaredOnly(
+          officialRoute: shape,
+          declaredCodes: notice.suspendedStopCodes.toSet());
+      if (impact.hasImpact) {
+        return DeviationReport(
+          notice: notice,
+          shape: shape,
+          impact: impact,
+          // Non "confermata": senza estrazione non sappiamo se l'avviso
+          // dica anche altro, per esempio un cambio di percorso che non
+          // abbiamo ricostruito.
+          confidence: Confidence.probabile,
+          whyIncomplete: 'La fermata sospesa la dichiara GTT, quella è '
+              'certa. Del resto dell\'avviso non so dirti: '
+              '${_lowerFirst(explainExtractionFailure(extraction))}',
+        );
+      }
       return DeviationReport(
         notice: notice,
         shape: shape,
@@ -325,6 +350,35 @@ class DeviationService {
         parsed: parsed,
         confidence: Confidence.confermata,
         whyIncomplete: 'stesso percorso, cambia solo il tipo di mezzo',
+      );
+    }
+
+    // 1-bis. Fermate sospese senza cambio di percorso.
+    //
+    // MISURATO: 14 avvisi su 198 dicono soltanto "Fermata 3447 Sabotino
+    // sospesa". Il codice sta nel testo, non in informed_entity, e si
+    // estrae con una regex. Prima finivano nel ramo "non nomina abbastanza
+    // vie" e l'informazione si perdeva, pur essendo la piu' certa che il
+    // sistema abbia: nessuna geometria da ricostruire, solo un codice da
+    // cercare nel GTFS.
+    final declaredCodes = <String>{
+      ...notice.suspendedStopCodes,
+      ...parsed.suspendedStopCodes,
+    };
+    if (declaredCodes.isNotEmpty && parsed.viaSequence.isEmpty) {
+      final impact = _impact.declaredOnly(
+          officialRoute: shape, declaredCodes: declaredCodes);
+      return DeviationReport(
+        notice: notice,
+        shape: shape,
+        parsed: parsed,
+        impact: impact,
+        confidence: Confidence.confermata,
+        whyIncomplete: impact.hasImpact
+            ? null
+            : 'GTT nomina ${declaredCodes.length == 1 ? "una fermata" : "delle fermate"} '
+                '(${declaredCodes.join(", ")}) che non trovo su questa linea: '
+                'potrebbe riguardarne un\'altra',
       );
     }
 

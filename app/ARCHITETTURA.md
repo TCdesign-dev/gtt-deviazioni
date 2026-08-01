@@ -71,13 +71,13 @@ smentiscono.
 | `pipeline/extractor.dart` | fatto, 11 test + banco di prova |
 | `pipeline/geocoder.dart` | fatto, 13 test + verifica dal vivo |
 | `pipeline/route_builder.dart` | fatto, 12 test + catena dal vivo 3/3 |
-| `pipeline/stop_impact.dart` | fatto, 11 test + catena dal vivo |
+| `pipeline/stop_impact.dart` | fatto, 18 test + catena dal vivo |
 | `pipeline/rejoin_inference.dart` | fatto, 7 test + catena dal vivo |
 | `sources/vehicles_source.dart` | fatto |
 | `pipeline/vehicle_watch.dart` | fatto, 9 test + prova dal vivo |
 | `data/` | fatto — impostazioni e orchestrazione |
 | `ui/` | fatto — 3 schermate + mappa, 11 test |
-| `core/deviation_service.dart` | fatto — la facciata |
+| `core/deviation_service.dart` | fatto — la facciata, 15 test |
 | `core/gtfs/gtfs_downloader.dart` | fatto — scarico ed estrazione |
 
 ```bash

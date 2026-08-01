@@ -178,6 +178,11 @@ class _LineMapState extends State<LineMap> {
         else
           _Legend(
             hasDeviation: deviations.isNotEmpty,
+            // Nessuna geometria ma delle fermate saltate: puo' succedere
+            // solo quando GTT ha nominato le fermate sospese senza
+            // annunciare un cambio di percorso. Dire "non ricostruita"
+            // sarebbe una bugia — non c'era niente da ricostruire.
+            onlySuspendedStops: deviations.isEmpty && skipped.isNotEmpty,
             skippedCount: skipped.length,
             servedCount: served.length,
             vehicleCount: widget.vehicles.length,
@@ -364,6 +369,7 @@ class _SelectedStopBanner extends StatelessWidget {
 class _Legend extends StatelessWidget {
   const _Legend({
     required this.hasDeviation,
+    required this.onlySuspendedStops,
     required this.skippedCount,
     required this.servedCount,
     required this.vehicleCount,
@@ -372,6 +378,7 @@ class _Legend extends StatelessWidget {
   });
 
   final bool hasDeviation;
+  final bool onlySuspendedStops;
   final int skippedCount;
   final int servedCount;
   final int vehicleCount;
@@ -399,6 +406,8 @@ class _Legend extends StatelessWidget {
                 style),
           if (hasDeviation)
             _line(Colors.red.shade700, 'percorso deviato', style)
+          else if (onlySuspendedStops)
+            Text('nessun cambio di percorso', style: style)
           else
             Text('deviazione non ricostruita', style: style),
           _dot(Colors.white, Colors.blueGrey.shade600,

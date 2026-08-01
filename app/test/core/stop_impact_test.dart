@@ -216,4 +216,67 @@ void main() {
       expect(alt.toString(), contains('linea d\'aria'));
     });
   });
+
+  group('Fermate sospese dichiarate, senza deviazione', () {
+    // MISURATO: 14 avvisi su 198 dicono solo questo. E' il caso di massima
+    // confidenza: nessuna geometria da ricostruire, solo un codice da
+    // cercare nel GTFS.
+    test('la fermata nominata da GTT viene marcata sospesa', () {
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: {'300'});
+
+      expect(r.impacts.length, equals(1));
+      expect(r.impacts.single.stop.code, equals('300'));
+      expect(r.impacts.single.status, equals(StopStatus.declaredSuspended));
+      expect(r.hasImpact, isTrue);
+    });
+
+    test('piu fermate insieme', () {
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: {'300', '500'});
+      expect(r.skipped.length, equals(2));
+    });
+
+    test('non propone come alternativa una fermata sospesa anche lei', () {
+      // La 300 e la 400 sono vicine: se sono sospese entrambe, mandare
+      // l'utente dall'una all'altra sarebbe un consiglio inutile.
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: {'300', '400'});
+      for (final i in r.skipped) {
+        expect(i.alternatives.map((a) => a.stop.code),
+            isNot(contains('400')));
+        expect(i.alternatives.map((a) => a.stop.code),
+            isNot(contains('300')));
+      }
+    });
+
+    test('propone le fermate ancora servite della stessa linea', () {
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: {'300'});
+      final alts = r.impacts.single.alternatives;
+      expect(alts, isNotEmpty);
+      expect(alts.any((a) => a.sameLine), isTrue);
+    });
+
+    test('un codice che non sta su questa linea non inventa nulla', () {
+      // Un alert puo' riguardare piu' linee: la fermata potrebbe non essere
+      // di questa. Meglio nessun impatto che una fermata a caso.
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: {'99999'});
+      expect(r.impacts, isEmpty);
+      expect(r.hasImpact, isFalse);
+    });
+
+    test('nessun codice, nessun impatto', () {
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: const {});
+      expect(r.impacts, isEmpty);
+    });
+
+    test('riporta il tratto interessato', () {
+      final r = analyzer.declaredOnly(
+          officialRoute: officialRoute, declaredCodes: {'300', '500'});
+      expect(r.affectedFromMeters, lessThan(r.affectedToMeters));
+    });
+  });
 }

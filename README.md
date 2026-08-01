@@ -86,8 +86,8 @@ giorno.
 
 | Piattaforma | Comando | Note |
 |---|---|---|
-| 🤖 Android | `flutter build apk` | Nessuna licenza da sviluppatore |
-| 🍎 iOS | `flutter build ios` | Con un Apple ID gratuito la firma scade dopo 7 giorni |
+| 🍎 iOS | `flutter build ios` | Provata sul simulatore. Con un Apple ID gratuito la firma scade dopo 7 giorni; per distribuirla serve il programma a pagamento |
+| 🤖 Android | `flutter build apk` | **Mai compilata**: il codice è condiviso e la configurazione è a posto, ma nessuno l'ha ancora costruita. Servono JDK 17+ e le licenze dell'SDK accettate. Nessuna licenza da sviluppatore |
 
 > [!IMPORTANT]
 > **Privacy.** La posizione, se la attivi, non lascia il dispositivo: non

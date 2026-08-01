@@ -254,6 +254,12 @@ Per non fraintendere:
 - **niente notifiche.** iOS non regge il polling in background (lezione già
   pagata su un altro progetto). Servirebbe un cron esterno — GitHub Actions
   è gratis e basta.
+- **non è mai stata compilata per Android.** Il codice è condiviso e la
+  configurazione è verificata a mano (Java 17 già impostato, i permessi di
+  posizione nel manifest, `geolocator` che segue il `minSdk` di Flutter),
+  ma su questo Mac c'è solo Java 8 e mancano `cmdline-tools` e le licenze
+  dell'SDK. Finché qualcuno non lancia `flutter build apk`, «funziona su
+  Android» è un'ipotesi, non un fatto.
 - **distanze a piedi in linea d'aria**, non reali. L'interfaccia lo dichiara.
 - **dentro una direzione usa solo la variante principale.** Una deviazione
   che riguardasse la sola corsa limitata verrebbe calcolata sul percorso

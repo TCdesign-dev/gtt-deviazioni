@@ -46,6 +46,14 @@ class AppRepository extends ChangeNotifier {
   /// ha chiesto.
   final Set<String> _busy = {};
   bool isChecking(String routeId) => _busy.contains(routeId);
+
+  /// A che punto e' il controllo di quella linea.
+  ///
+  /// Una rotella che gira e basta, per mezzo minuto, e' indistinguibile
+  /// da un'app bloccata. Dire "avviso 2 di 4: cerco «corso Lecce» sulla
+  /// mappa" costa niente e cambia tutto.
+  final Map<String, String> _phaseOf = {};
+  String? phaseOfLine(String routeId) => _phaseOf[routeId];
   bool get isCheckingAny => _busy.isNotEmpty;
 
   /// Quando una linea e' stata controllata l'ultima volta.
@@ -133,10 +141,16 @@ class AppRepository extends ChangeNotifier {
     try {
       _notices = await service.fetchAllNotices();
 
-      for (final line in index.lines.values) {
+      final lines = index.lines.values.toList();
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        progress = lines.length == 1 ? 0 : i / lines.length;
         phase = 'linea ${line.shortName}';
         notifyListeners();
+        _busy.add(line.routeId);
         await _checkOne(service, line, _notices);
+        _busy.remove(line.routeId);
+        _phaseOf.remove(line.routeId);
       }
       lastRefresh = DateTime.now();
       state = LoadState.ready;
@@ -163,6 +177,7 @@ class AppRepository extends ChangeNotifier {
     if (service == null || _busy.contains(line.routeId)) return;
 
     _busy.add(line.routeId);
+    _phaseOf[line.routeId] = 'chiedo gli avvisi a GTT';
     error = null;
     notifyListeners();
 
@@ -177,6 +192,7 @@ class AppRepository extends ChangeNotifier {
       error = _readable(e);
     } finally {
       _busy.remove(line.routeId);
+      _phaseOf.remove(line.routeId);
       notifyListeners();
     }
   }
@@ -184,8 +200,14 @@ class AppRepository extends ChangeNotifier {
   Future<void> _checkOne(
       DeviationService service, TransitLine line, List<RawNotice> notices) async {
     try {
-      _statuses[line.routeId] =
-          await service.statusOf(line, allNotices: notices);
+      _statuses[line.routeId] = await service.statusOf(
+        line,
+        allNotices: notices,
+        onProgress: (p) {
+          _phaseOf[line.routeId] = p;
+          notifyListeners();
+        },
+      );
       _checkedAt[line.routeId] = DateTime.now();
     } on Object catch (e) {
       // Una linea che fallisce non deve bloccare le altre.

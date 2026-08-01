@@ -128,7 +128,33 @@ class _LineScreenState extends State<LineScreen> {
               onPressed: () => widget.repo.refreshLine(widget.line),
             ),
         ],
-        bottom: PreferredSize(
+        bottom: checking
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(40),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LinearProgressIndicator(
+                        minHeight: 3,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.repo.phaseOfLine(widget.line.routeId) ??
+                            'controllo…',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : PreferredSize(
           preferredSize: const Size.fromHeight(20),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8, left: 16, right: 16),

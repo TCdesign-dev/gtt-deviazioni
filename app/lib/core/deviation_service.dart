@@ -217,16 +217,27 @@ class DeviationService {
       throw StateError('nessuna geometria per ${line.shortName}');
     }
 
+    if (allNotices == null) onProgress?.call('chiedo gli avvisi a GTT');
     final notices = noticesFor(line, allNotices ?? await fetchAllNotices());
     final reports = <DeviationReport>[];
 
-    for (final notice in notices) {
-      onProgress?.call('leggo l\'avviso');
+    if (notices.isEmpty) onProgress?.call('nessun avviso su questa linea');
+
+    for (var i = 0; i < notices.length; i++) {
+      final notice = notices[i];
+      // "Avviso 2 di 4" invece di un generico "sto lavorando": e' l'unica
+      // cosa che fa capire quanto manca. Un controllo puo' durare mezzo
+      // minuto, e mezzo minuto davanti a una rotella muta sembra un
+      // blocco.
+      final quale =
+          notices.length == 1 ? 'l\'avviso' : 'avviso ${i + 1} di ${notices.length}';
+      onProgress?.call('leggo $quale');
       // Un avviso puo' riguardare una direzione sola, o entrambe. Va
       // analizzato contro il percorso GIUSTO, altrimenti le fermate
       // saltate sono quelle dell'altro senso di marcia.
       for (final s in shapesConcernedBy(notice, andata, ritorno)) {
-        reports.add(await _analyze(notice, s));
+        reports.add(await _analyze(notice, s,
+            onProgress: (p) => onProgress?.call('$quale: $p')));
       }
     }
 
@@ -331,8 +342,13 @@ class DeviationService {
         '${t.minute.toString().padLeft(2, "0")}';
   }
 
-  Future<DeviationReport> _analyze(RawNotice notice, RouteShape shape) async {
+  Future<DeviationReport> _analyze(
+    RawNotice notice,
+    RouteShape shape, {
+    void Function(String phase)? onProgress,
+  }) async {
     // 1. Testo -> struttura.
+    onProgress?.call('interpreto il testo');
     final extraction = await _extractor.extract(notice);
     if (!extraction.isUsable) {
       // L'LLM non ha risposto — quota finita, rete, servizio giu'. Ma se
@@ -422,7 +438,12 @@ class DeviationService {
 
     final points = <GeoPoint>[];
     final unresolved = <String>[];
-    for (final t in toponyms) {
+    for (var i = 0; i < toponyms.length; i++) {
+      final t = toponyms[i];
+      // Il geocoding e' il passaggio piu' lento: una chiamata per via,
+      // con le pause di cortesia verso Photon. Vale la pena dire a che
+      // punto e', e quale via si sta cercando.
+      onProgress?.call('cerco «$t» sulla mappa (${i + 1}/${toponyms.length})');
       final r = await _geocoder.locate(t,
           near: shape, municipality: parsed.municipality);
       if (r.isUsable) {
@@ -470,6 +491,7 @@ class DeviationService {
     ];
 
     // 3. Punti -> percorso vero, con le cinque prove.
+    onProgress?.call('calcolo il percorso deviato');
     final route = await _router.build(
       waypoints: waypoints,
       officialRoute: shape,

@@ -9,7 +9,7 @@ la mia fermata è ancora servita?**
 [![Licenza: MIT](https://img.shields.io/badge/licenza-MIT-blue.svg)](LICENSE)
 [![Piattaforme](https://img.shields.io/badge/piattaforme-iOS%20%7C%20Android-lightgrey.svg)](#-installazione)
 [![Flutter](https://img.shields.io/badge/Flutter-Dart%203.12+-02569B.svg)](https://flutter.dev)
-[![Test](https://img.shields.io/badge/test-212-brightgreen.svg)](#-sviluppo)
+[![Test](https://img.shields.io/badge/test-217-brightgreen.svg)](#-sviluppo)
 [![Dati: CC-BY](https://img.shields.io/badge/dati%20GTT-CC--BY-orange.svg)](https://www.gtt.to.it/cms/openday/open-data)
 
 <img src="docs/img/linea-65.png" width="320"
@@ -257,17 +257,41 @@ non esistono nel feed corrente, e a cui mancano sette linee.
 
 ## 🚧 Limiti noti
 
-| Limite | Perché |
-|---|---|
-| 🔕 **Nessuna notifica** | iOS non regge il polling in background, e un server contraddirebbe l'impostazione del progetto |
-| 📏 **Distanze in linea d'aria** | Le alternative non usano routing pedonale; a Torino un fiume o una ferrovia cambiano tutto. L'interfaccia lo dichiara |
-| 🔀 **Una variante per direzione** | Una deviazione che riguardasse solo una corsa limitata verrebbe valutata sul percorso intero |
-| 📆 **Date inaffidabili dal feed protobuf** | `active_period.start` è l'ora di pubblicazione, non l'inizio (161 casi su 161). La data giusta arriva solo dalla tabella HTML |
+### 🔕 Non ti avvisa da sola: devi aprirla tu
+
+L'app controlla GTT solo quando gliela chiedi. Non c'è modo di farlo in
+sottofondo: iOS chiude le app che ci provano, e l'unica alternativa
+sarebbe un server sempre acceso — che è proprio la cosa che questo
+progetto evita, per non dover dipendere da niente e da nessuno.
+
+### 📏 Le distanze a piedi sono in linea d'aria
+
+Quando una fermata salta, l'app ti propone quelle vicine e ti dice quanto
+distano — ma in linea retta, come vola un uccello, non come cammini tu. A
+Torino un fiume, una ferrovia o un muro possono raddoppiare il percorso
+reale. L'app scrive «in linea d'aria» ogni volta, così il numero non si
+scambia per una distanza a piedi.
+
+### 🔀 Usa il percorso principale della linea
+
+La stessa linea ha spesso più percorsi leggermente diversi: alcune corse
+si fermano prima, altre passano da una via invece che da un'altra. L'app
+usa quello più frequente. Se una deviazione riguardasse **soltanto** una
+di quelle corse minori, l'app la calcolerebbe come se valesse per tutte.
+
+### 📆 Le date di inizio le dà una fonte sola
+
+GTT pubblica gli avvisi in due posti, e in uno dei due la data di inizio
+non è quella vera: è l'ora in cui l'avviso è stato scritto. L'abbiamo
+verificato su 161 avvisi, e in 161 casi su 161 era così. L'app prende
+quindi le date dall'altra fonte, la tabella del sito, che le ha in una
+colonna apposta. Quando una variazione compare **solo** nel primo posto,
+la sua data d'inizio resta inaffidabile.
 
 ## 🧪 Sviluppo
 
 ```bash
-cd app && flutter test      # 212 test
+cd app && flutter test      # 217 test
 cd app && flutter analyze
 ```
 

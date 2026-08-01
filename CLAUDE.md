@@ -162,6 +162,11 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   `35N`, `36N` sono altro. **`N04` e `4N` coesistono e non sono la stessa
   linea**: lo scambio prefisso↔suffisso va tentato per ultimo, dopo lo
   zero-padding, o «N4» finirebbe sulla 4N invece che sulla N04.
+- **Una rotella muta è indistinguibile da un'app bloccata.** Il
+  controllo di una linea può durare mezzo minuto — LLM, geocoding via per
+  via, routing — e mostrava solo un cerchietto che gira. `statusOf`
+  aveva già un `onProgress` e **non lo passava nessuno**. Ora dice «avviso
+  2 di 4: cerco «corso Lecce» sulla mappa», con una barra.
 - **Un'attesa lunga rende un pulsante indistinguibile da uno rotto.**
   L'osservazione dormiva 20 s filati fra un campione e l'altro senza
   sentire «basta così»: premevi e non succedeva niente. L'attesa ora si
@@ -238,7 +243,7 @@ Per non fraintendere:
 ## 8. Come si lavora
 
 ```bash
-cd app && flutter test          # 212 test, devono passare tutti
+cd app && flutter test          # 217 test, devono passare tutti
 cd app && flutter analyze       # deve essere pulito
 ```
 
@@ -291,4 +296,4 @@ facendo gli screenshot troppo presto.
 
 ---
 
-*Ultimo aggiornamento: 1 agosto 2026. 212 test, 36 commit.*
+*Ultimo aggiornamento: 1 agosto 2026. 217 test, 37 commit.*

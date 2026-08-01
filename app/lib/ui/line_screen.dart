@@ -41,11 +41,17 @@ class _LineScreenState extends State<LineScreen> {
 
   @override
   void dispose() {
-    if (widget.repo.visibleLineRouteId == widget.line.routeId) {
-      widget.repo.visibleLineRouteId = null;
-      // Niente notifyListeners qui: si sta smontando, e chi resta viene
-      // ricostruito comunque dal Navigator.
-    }
+    // La striscia in cima sta FUORI dal Navigator: uscendo di qui non
+    // viene ricostruita da sola, va avvisata. Senza questo ricompariva
+    // solo al primo aggiornamento successivo — cioe' aprendo un'altra
+    // linea o ricontrollando qualcosa.
+    //
+    // Dopo il frame, perche' durante lo smontaggio non si puo' far
+    // ricostruire l'albero.
+    final routeId = widget.line.routeId;
+    final repo = widget.repo;
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => repo.clearVisibleLine(routeId));
     super.dispose();
   }
 

@@ -200,6 +200,14 @@ Ognuna di queste è costata tempo. Sono tutte silenziose: non danno errore.
   del 3-7 agosto finivano uniti in un avviso solo, con le date di uno e
   il percorso dell'altro. Contano le vie **percorse**, non quelle che
   dicono dove va il mezzo.
+- **Chi sta fuori dal Navigator non si accorge che una schermata se n'è
+  andata.** La striscia dell'osservazione vive nel `builder` di
+  `MaterialApp` e si ricostruisce solo quando il repository notifica:
+  uscendo dal dettaglio non ricompariva finché non capitava un altro
+  aggiornamento — aprire un'altra linea, ricontrollare qualcosa. Il
+  `dispose` deve **notificare**, dopo il frame. Il commento che avevo
+  lasciato («chi resta viene ricostruito comunque dal Navigator») era
+  proprio sbagliato: il Navigator ricostruisce ciò che sta dentro di sé.
 - **Apple pretende la stringa anche per i permessi che non chiedi.**
   L'analisi statica del caricamento (avviso 90683) guarda le API
   *referenziate* dal binario, non quelle usate: `geolocator` contiene una

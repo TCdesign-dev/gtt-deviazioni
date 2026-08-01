@@ -195,6 +195,17 @@ class AppRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// La schermata di [routeId] se n'e' andata.
+  ///
+  /// Si controlla che sia ancora la sua: uscendo da una linea per entrare
+  /// subito in un'altra, la nuova puo' essersi gia' annunciata, e questa
+  /// cancellerebbe il suo annuncio.
+  void clearVisibleLine(String routeId) {
+    if (visibleLineRouteId != routeId) return;
+    visibleLineRouteId = null;
+    notifyListeners();
+  }
+
   /// La linea che si sta osservando, per aprirla da un punto qualsiasi.
   TransitLine? get watchingLine =>
       watchingRouteId == null ? null : index?.lines[watchingRouteId];

@@ -77,7 +77,7 @@ void main() {
       ),
     );
 
-    expect(find.text('non ancora controllata'), findsNothing);
+    expect(find.text('Da controllare'), findsNothing);
   });
 
   testWidgets('a riposo niente barra, e si vede lo stato', (tester) async {
@@ -97,7 +97,7 @@ void main() {
     );
 
     expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(find.text('non ancora controllata'), findsOneWidget);
+    expect(find.text('Da controllare'), findsOneWidget);
   });
 
   testWidgets('mentre controlla non si puo far ripartire il controllo', (
@@ -149,7 +149,7 @@ void main() {
     expect(find.byIcon(Icons.directions_bus), findsOneWidget);
     // Prende il posto del riassunto: quello non e' cio' che sta
     // succedendo adesso.
-    expect(find.text('non ancora controllata'), findsNothing);
+    expect(find.text('Da controllare'), findsNothing);
   });
 
   testWidgets('un mezzo solo si dice al singolare', (tester) async {

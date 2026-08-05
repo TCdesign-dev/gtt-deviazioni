@@ -83,30 +83,43 @@ class LineTile extends StatelessWidget {
 
     String avvisi(int n) => '$n ${n == 1 ? "avviso" : "avvisi"}';
 
+    // Il titolo e' LA RISPOSTA, corta e sempre su una riga: e' quello che
+    // uno cerca guardando l'elenco. Il conteggio degli avvisi non e' una
+    // risposta — sapere che ce ne sono tre non dice se il bus passa — e
+    // messo in cima mandava il titolo a capo. Sta sotto, coi dettagli.
     final (Color colour, IconData icon, String label) = switch (status) {
-      null => (scheme.outline, Icons.help_outline, 'non ancora controllata'),
+      // Mai vuota: una riga senza titolo sembra un errore di caricamento.
+      null => (scheme.outline, Icons.help_outline, 'Da controllare'),
       final s when attivi == 0 && futuri > 0 => (
         Colors.blue.shade700,
         Icons.event_outlined,
-        'in corso nulla · ${avvisi(futuri)} in programma',
+        'Nulla in corso',
       ),
       final s when !s.hasDeviations => (
         Colors.green.shade700,
         Icons.check_circle_outline,
-        'percorso regolare',
+        'Percorso regolare',
       ),
       final s when skipped > 0 => (
         scheme.error,
         Icons.error_outline,
-        '${avvisi(attivi)} · $skipped '
-            '${skipped == 1 ? "fermata non servita" : "fermate non servite"}',
+        skipped == 1 ? '1 fermata non servita' : '$skipped fermate non servite',
       ),
       final s => (
         Colors.orange.shade800,
         Icons.warning_amber_outlined,
-        '${avvisi(attivi)} · fermate tutte servite',
+        'Fermate tutte servite',
       ),
     };
+
+    // I dettagli: quanti avvisi, quanti in programma, di quando e'
+    // l'esito. Piccoli e grigi, perche' si leggono solo se il titolo ti
+    // ha gia' interessato.
+    final dettagli = <String>[
+      if (attivi > 0) avvisi(attivi),
+      if (futuri > 0) '${avvisi(futuri)} in programma',
+      if (_vecchio != null) 'controllata ${_vecchio!}',
+    ].join(' · ');
 
     return ListTile(
       onTap: onTap,
@@ -162,11 +175,12 @@ class LineTile extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    futuri > 0 && attivi > 0
-                        ? '$label · +$futuri in programma'
-                        : label,
-                    style: TextStyle(color: colour),
-                    maxLines: 2,
+                    label,
+                    style: TextStyle(
+                      color: colour,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -182,13 +196,17 @@ class LineTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             )
-          // Un esito di ieri non si spaccia per fresco: la data si dice
-          // solo quando NON e' di oggi, o sarebbe rumore su ogni riga.
-          : _vecchio == null
+          : dettagli.isEmpty
           ? null
           : Text(
-              'controllata ${_vecchio!}',
+              dettagli,
               style: TextStyle(color: scheme.outline, fontSize: 12.5),
+              // Qui si puo' andare a capo: e' piccolo e grigio, e una
+              // seconda riga si legge senza fatica. Troncare con i
+              // puntini nascondeva quando era stato fatto il controllo.
+              // Il TITOLO invece resta su una riga, sempre.
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

@@ -1,84 +1,11 @@
 {
-  "compared_at": "2026-08-01T03:29:59.360513+00:00",
-  "prev_captured_at": "2026-07-31T13:41:53.139807+00:00",
-  "curr_captured_at": "2026-08-01T03:13:47.853064+00:00",
-  "prev_feed_version": "20260731",
-  "curr_feed_version": "20260801",
+  "compared_at": "2026-08-05T03:50:27.151101+00:00",
+  "prev_captured_at": "2026-08-04T03:14:30.982082+00:00",
+  "curr_captured_at": "2026-08-05T03:50:21.175489+00:00",
+  "prev_feed_version": "20260804",
+  "curr_feed_version": "20260805",
   "same_feed_version": false,
-  "n_changes": 7,
-  "lines_touched": [
-    "16 CD",
-    "65",
-    "73"
-  ],
-  "events": [
-    {
-      "kind": "shape_nuova",
-      "shape_id": "65UAs65AD3",
-      "line": "65",
-      "desc": "65 dir1 \"BOLZANO\" [65UAs65AD3]",
-      "length_m": 5634,
-      "n_stops": 19,
-      "n_trips": 56
-    },
-    {
-      "kind": "shape_nuova",
-      "shape_id": "73UAs73AA01",
-      "line": "73",
-      "desc": "73 dir1 \"PIAZZA ZARA, TRANSITA VIALE CURRENO\" [73UAs73AA01]",
-      "length_m": 8239,
-      "n_stops": 30,
-      "n_trips": 55
-    },
-    {
-      "kind": "shape_nuova",
-      "shape_id": "73UAs73BA01",
-      "line": "73",
-      "desc": "73 dir1 \"PIAZZA ZARA, TRANSITA VIA GATTI\" [73UAs73BA01]",
-      "length_m": 8766,
-      "n_stops": 31,
-      "n_trips": 20
-    },
-    {
-      "kind": "shape_nuova",
-      "shape_id": "73UDi73AR02",
-      "line": "73",
-      "desc": "73 dir0 \"VIA BONSIGNORE, TRANSITA VIALE CURRENO\" [73UDi73AR02]",
-      "length_m": 7979,
-      "n_stops": 29,
-      "n_trips": 45
-    },
-    {
-      "kind": "shape_nuova",
-      "shape_id": "73UDi73BR02",
-      "line": "73",
-      "desc": "73 dir0 \"VIA BONSIGNORE, TRANSITA VIA GATTI\" [73UDi73BR02]",
-      "length_m": 8504,
-      "n_stops": 31,
-      "n_trips": 30
-    },
-    {
-      "kind": "geometria_cambiata",
-      "shape_id": "16CDUDi16DRB2",
-      "line": "16 CD",
-      "desc": "16 CD dir0 \"CIRCOLARE DESTRA, PIAZZA SABOTINO\" [16CDUDi16DRB2]",
-      "delta_m": 147,
-      "length_m": [
-        6832,
-        6979
-      ]
-    },
-    {
-      "kind": "fermate_cambiate",
-      "shape_id": "16CDUDi16DRB2",
-      "line": "16 CD",
-      "desc": "16 CD dir0 \"CIRCOLARE DESTRA, PIAZZA SABOTINO\" [16CDUDi16DRB2]",
-      "rimosse": [
-        "3255"
-      ],
-      "aggiunte": [
-        "8952"
-      ]
-    }
-  ]
+  "n_changes": 0,
+  "lines_touched": [],
+  "events": []
 }

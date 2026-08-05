@@ -58,12 +58,29 @@ class _LineScreenState extends State<LineScreen> {
   void _startWatch() =>
       widget.repo.startWatch(widget.line, _window.duration);
 
+  /// "controllata alle 19:08" se e' di oggi, "ieri alle 19:08" se no.
+  ///
+  /// Da quando gli esiti sopravvivono alla chiusura dell'app, la sola ora
+  /// non basta piu': un esito di ieri sera mostrato come "alle 19:08"
+  /// sembrerebbe di adesso, ed e' esattamente il tipo di bugia che questo
+  /// progetto non si permette.
   String get _checkedLabel {
     final t = widget.repo.checkedAt(widget.line.routeId);
     if (t == null) return '';
     final h = t.hour.toString().padLeft(2, '0');
     final m = t.minute.toString().padLeft(2, '0');
-    return '  ·  controllata alle $h:$m';
+
+    final oggi = DateTime.now();
+    final giorno = DateTime(t.year, t.month, t.day);
+    final scarto =
+        DateTime(oggi.year, oggi.month, oggi.day).difference(giorno).inDays;
+
+    final quando = switch (scarto) {
+      0 => 'alle $h:$m',
+      1 => 'ieri alle $h:$m',
+      _ => 'il ${t.day}/${t.month} alle $h:$m',
+    };
+    return '  ·  controllata $quando';
   }
 
   @override
@@ -188,19 +205,19 @@ class _LineScreenState extends State<LineScreen> {
                 padding: EdgeInsets.all(32),
                 child: _AllGood(nienteOra: true),
               ),
-            for (final report in status.activeReports)
-              _ReportCard(report: report, status: status),
+            for (final gruppo in _perAvviso(status.activeReports))
+              _ReportCard(reports: gruppo, status: status),
             // In fondo, dopo cio' che succede adesso: sapere del 24 agosto
             // e' utile, ma non e' la risposta alla domanda di oggi.
             if (status.scheduledReports.isNotEmpty)
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 28, 16, 4),
-                child: Text('Piu\' avanti',
+                child: Text('Più avanti',
                     style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-            for (final report in status.scheduledReports)
+            for (final gruppo in _perAvviso(status.scheduledReports))
               _ReportCard(
-                  report: report, status: status, daAvvenire: true),
+                  reports: gruppo, status: status, daAvvenire: true),
           ],
         ],
       ),
@@ -231,21 +248,45 @@ class _AllGood extends StatelessWidget {
       );
 }
 
+/// Gli esiti raggruppati per avviso, nell'ordine in cui arrivano.
+///
+/// Un avviso che riguarda tutte e due le direzioni viene analizzato due
+/// volte — ed e' giusto, le fermate saltate sono diverse per senso di
+/// marcia — ma mostrarlo come DUE schede significa ristampare per intero
+/// lo stesso testo di GTT. Sulla 68, tre avvisi diventavano sei schede.
+List<List<DeviationReport>> _perAvviso(List<DeviationReport> reports) {
+  final per = <String, List<DeviationReport>>{};
+  for (final r in reports) {
+    per.putIfAbsent(r.notice.id, () => []).add(r);
+  }
+  return per.values.toList(growable: false);
+}
+
 class _ReportCard extends StatelessWidget {
   const _ReportCard({
-    required this.report,
+    required this.reports,
     required this.status,
     this.daAvvenire = false,
   });
 
-  final DeviationReport report;
+  /// Lo stesso avviso, una volta per direzione interessata.
+  final List<DeviationReport> reports;
   final LineStatus status;
 
   /// La variazione deve ancora cominciare.
   final bool daAvvenire;
 
+  DeviationReport get _primo => reports.first;
+
   @override
   Widget build(BuildContext context) {
+    // Con piu' direzioni si mostra la piu' incerta: dire "ricostruita e
+    // verificata" quando una delle due non lo e' sarebbe una promessa
+    // piu' grande del dato.
+    final peggiore = reports.reduce(
+        (a, b) => a.confidence.index >= b.confidence.index ? a : b);
+    final piuDirezioni = reports.length > 1;
+
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       clipBehavior: Clip.antiAlias,
@@ -253,23 +294,31 @@ class _ReportCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (daAvvenire)
-            _ScheduledStrip(notice: report.notice, now: status.checkedAt)
+            _ScheduledStrip(notice: _primo.notice, now: status.checkedAt)
           else
-            _ConfidenceStrip(report: report),
+            _ConfidenceStrip(report: peggiore),
 
-          // 1. La risposta alla domanda vera.
-          if (report.skippedStops.isNotEmpty)
-            _SkippedStops(stops: report.skippedStops)
-          else if (report.impact != null)
+          // 1. La risposta alla domanda vera, per ogni direzione.
+          for (final r in reports) ...[
+            if (piuDirezioni && r.skippedStops.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Text('→ ${r.shape.headsign}',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary)),
+              ),
+            if (r.skippedStops.isNotEmpty) _SkippedStops(stops: r.skippedStops),
+          ],
+          if (reports.every((r) => r.skippedStops.isEmpty) &&
+              reports.any((r) => r.impact != null))
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Text('Il mezzo devia ma serve comunque tutte le '
                   'fermate del tratto.'),
             ),
 
-
-          // 3. Il testo di GTT, sempre.
-          _OriginalText(report: report),
+          // 2. Il testo di GTT, UNA volta sola.
+          _OriginalText(report: _primo),
         ],
       ),
     );
@@ -445,14 +494,40 @@ class _SkippedStops extends StatelessWidget {
   }
 }
 
-class _OriginalText extends StatelessWidget {
+/// Il testo di GTT, richiudibile quando e' lungo.
+///
+/// Gli avvisi di GTT arrivano a venti righe — quello della 68 descrive
+/// due direzioni, la viabilita' di cantiere e la causa — e con quattro
+/// avvisi su una linea la schermata diventa un rotolo in cui il resto
+/// (le fermate saltate, la mappa) sparisce.
+///
+/// Si richiude solo quello lungo: un pulsante sotto un avviso di due
+/// righe e' rumore, e nasconde una cosa che si leggeva in un colpo
+/// d'occhio.
+class _OriginalText extends StatefulWidget {
   const _OriginalText({required this.report});
 
   final DeviationReport report;
 
+  /// Oltre questa lunghezza il testo si richiude. Tarata sui testi veri:
+  /// gli avvisi brevi di GTT ("Fermata 3447 Sabotino sospesa") stanno
+  /// sotto i 200 caratteri, quelli che descrivono un percorso li superano
+  /// sempre.
+  static const _sogliaCaratteri = 240;
+
+  @override
+  State<_OriginalText> createState() => _OriginalTextState();
+}
+
+class _OriginalTextState extends State<_OriginalText> {
+  bool _espanso = false;
+
   @override
   Widget build(BuildContext context) {
+    final report = widget.report;
     final n = report.notice;
+    final lungo = n.text.length > _OriginalText._sogliaCaratteri;
+    final chiuso = lungo && !_espanso;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
@@ -467,7 +542,37 @@ class _OriginalText extends StatelessWidget {
           if (n.headline != null && n.headline!.isNotEmpty)
             Text(n.headline!,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-          Text(n.text),
+          // Chiuso si vedono quattro righe sfumate in fondo: si capisce
+          // che continua senza doverlo scrivere.
+          if (chiuso)
+            ShaderMask(
+              shaderCallback: (r) => LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black,
+                  Colors.black,
+                  Colors.black.withValues(alpha: 0.06),
+                ],
+                stops: const [0, 0.62, 1],
+              ).createShader(r),
+              child: Text(n.text, maxLines: 4, overflow: TextOverflow.clip),
+            )
+          else
+            Text(n.text),
+          if (lungo)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => setState(() => _espanso = !_espanso),
+                child: Text(chiuso ? 'Leggi tutto' : 'Mostra meno'),
+              ),
+            ),
           // Quando GTT pubblica la stessa variazione in due posti se ne
           // mostra una sola, ed e' giusto dire perche': chi confronta con
           // il sito deve capire da dove vengono le date.

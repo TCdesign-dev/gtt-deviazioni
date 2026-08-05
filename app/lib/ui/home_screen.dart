@@ -120,12 +120,12 @@ class HomeScreen extends StatelessWidget {
           for (final line in lines)
             LineTile(
               shortName: line.shortName,
-              longName: line.longName,
               status: repo.statusOf(line.routeId),
               checking: repo.isChecking(line.routeId),
               phase: repo.phaseOfLine(line.routeId),
               watching: repo.isWatching(line.routeId),
               watchedVehicles: repo.liveTracks.length,
+              checkedAt: repo.checkedAt(line.routeId),
               onCheck: () => repo.refreshLine(line),
               onTap: repo.statusOf(line.routeId) == null
                   ? null

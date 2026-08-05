@@ -232,6 +232,16 @@ class _LineMapState extends State<LineMap> {
                           strokeWidth: 6,
                           color: Colors.red.shade700,
                         ),
+                      // Il tratto che i mezzi hanno percorso DAVVERO fuori
+                      // dal percorso normale. Colore diverso dal rosso
+                      // apposta: quello e' ricostruito da un testo, questo
+                      // e' misurato, e non sono la stessa cosa.
+                      if (osservato.length > 1)
+                        Polyline(
+                          points: osservato,
+                          strokeWidth: 6,
+                          color: Colors.purple.shade600,
+                        ),
                     ],
                   ),
                   // Le fermate servite: piccole e discrete, non devono coprire

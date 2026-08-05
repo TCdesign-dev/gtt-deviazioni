@@ -15,14 +15,13 @@ class LineTile extends StatelessWidget {
     required this.phase,
     required this.watching,
     required this.watchedVehicles,
+    required this.checkedAt,
     required this.onCheck,
-    this.longName,
     this.onTap,
     super.key,
   });
 
   final String shortName;
-  final String? longName;
   final LineStatus? status;
   final bool checking;
 
@@ -36,8 +35,31 @@ class LineTile extends StatelessWidget {
   /// lascerebbe girare interrogando GTT per niente.
   final bool watching;
   final int watchedVehicles;
+
+  /// Quando e' stato fatto il controllo che si sta mostrando.
+  ///
+  /// Se non e' di oggi va detto: gli esiti sopravvivono alla chiusura
+  /// dell'app, e "2 fermate non servite" senza data sembra adesso.
+  final DateTime? checkedAt;
   final VoidCallback onCheck;
   final VoidCallback? onTap;
+
+  /// "ieri" o "il 30/7" quando l'esito non e' di oggi. null se lo e'.
+  String? get _vecchio {
+    final t = checkedAt;
+    if (t == null) return null;
+    final oggi = DateTime.now();
+    final giorni = DateTime(
+      oggi.year,
+      oggi.month,
+      oggi.day,
+    ).difference(DateTime(t.year, t.month, t.day)).inDays;
+    return switch (giorni) {
+      0 => null,
+      1 => 'ieri',
+      _ => 'il ${t.day}/${t.month}',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +67,19 @@ class LineTile extends StatelessWidget {
     final skipped = status?.allSkippedStops.length ?? 0;
     // Gli avvisi che devono ancora cominciare non entrano nel riassunto
     // di adesso: si dicono a parte, sotto.
-    final attivi = status?.activeReports.length ?? 0;
-    final futuri = status?.scheduledReports.length ?? 0;
+    // Per AVVISO, non per rapporto: un avviso che riguarda tutte e due le
+    // direzioni viene analizzato due volte, e contarlo due volte diceva
+    // "6 avvisi" dove GTT ne ha pubblicati 3.
+    final attivi = status?.activeReports
+            .map((r) => r.notice.id)
+            .toSet()
+            .length ??
+        0;
+    final futuri = status?.scheduledReports
+            .map((r) => r.notice.id)
+            .toSet()
+            .length ??
+        0;
 
     String avvisi(int n) => '$n ${n == 1 ? "avviso" : "avvisi"}';
 
@@ -93,27 +126,15 @@ class LineTile extends StatelessWidget {
           ),
         ),
       ),
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(
-              longName ?? 'Linea $shortName',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (watching) ...[
-            const SizedBox(width: 6),
-            Icon(Icons.my_location, size: 15, color: Colors.blue.shade700),
-          ],
-        ],
-      ),
-      subtitle: watching
+      // Il titolo e' lo STATO, non i capolinea. I due capolinea non ci
+      // stanno su una riga — si troncavano a meta' — e chi ha aggiunto
+      // la linea sa gia' dove va: quello che non sa e' se oggi devia.
+      title: watching
           ? Row(
               children: [
                 Icon(
                   Icons.directions_bus,
-                  size: 15,
+                  size: 16,
                   color: Colors.blue.shade700,
                 ),
                 const SizedBox(width: 6),
@@ -129,29 +150,15 @@ class LineTile extends StatelessWidget {
               ],
             )
           : checking
-          // Durante il controllo il posto del riassunto lo prende
-          // l'avanzamento: quello vecchio non e' piu' vero, e una riga
-          // muta con la rotella accanto sembra un blocco.
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                LinearProgressIndicator(
-                  minHeight: 3,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  phase ?? 'controllo…',
-                  style: TextStyle(color: scheme.primary, fontSize: 12.5),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          ? Text(
+              phase ?? 'controllo…',
+              style: TextStyle(color: scheme.primary),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             )
           : Row(
               children: [
-                Icon(icon, size: 16, color: colour),
+                Icon(icon, size: 17, color: colour),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -164,6 +171,24 @@ class LineTile extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+      subtitle: checking
+          // Mentre controlla, la barra: una riga muta con la rotella
+          // accanto sembra un blocco.
+          ? Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: LinearProgressIndicator(
+                minHeight: 3,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            )
+          // Un esito di ieri non si spaccia per fresco: la data si dice
+          // solo quando NON e' di oggi, o sarebbe rumore su ogni riga.
+          : _vecchio == null
+          ? null
+          : Text(
+              'controllata ${_vecchio!}',
+              style: TextStyle(color: scheme.outline, fontSize: 12.5),
             ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

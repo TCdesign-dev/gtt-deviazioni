@@ -22,6 +22,7 @@ void main() {
           status: null,
           watching: false,
           watchedVehicles: 0,
+          checkedAt: null,
           checking: true,
           phase: 'avviso 2 di 4: cerco «corso Lecce» sulla mappa',
           onCheck: _niente,
@@ -44,6 +45,7 @@ void main() {
           status: null,
           watching: false,
           watchedVehicles: 0,
+          checkedAt: null,
           checking: true,
           phase: null,
           onCheck: _niente,
@@ -67,6 +69,7 @@ void main() {
           status: null,
           watching: false,
           watchedVehicles: 0,
+          checkedAt: null,
           checking: true,
           phase: 'interpreto il testo',
           onCheck: _niente,
@@ -85,6 +88,7 @@ void main() {
           status: null,
           watching: false,
           watchedVehicles: 0,
+          checkedAt: null,
           checking: false,
           phase: null,
           onCheck: _niente,
@@ -107,6 +111,7 @@ void main() {
           status: null,
           watching: false,
           watchedVehicles: 0,
+          checkedAt: null,
           checking: true,
           phase: 'interpreto il testo',
           onCheck: () => tocchi++,
@@ -132,6 +137,7 @@ void main() {
           status: null,
           watching: true,
           watchedVehicles: 3,
+          checkedAt: null,
           checking: false,
           phase: null,
           onCheck: _niente,
@@ -140,7 +146,7 @@ void main() {
     );
 
     expect(find.text('sto guardando 3 mezzi'), findsOneWidget);
-    expect(find.byIcon(Icons.my_location), findsOneWidget);
+    expect(find.byIcon(Icons.directions_bus), findsOneWidget);
     // Prende il posto del riassunto: quello non e' cio' che sta
     // succedendo adesso.
     expect(find.text('non ancora controllata'), findsNothing);
@@ -154,6 +160,7 @@ void main() {
           status: null,
           watching: true,
           watchedVehicles: 1,
+          checkedAt: null,
           checking: false,
           phase: null,
           onCheck: _niente,
@@ -171,6 +178,7 @@ void main() {
           status: null,
           watching: true,
           watchedVehicles: 0,
+          checkedAt: null,
           checking: false,
           phase: null,
           onCheck: _niente,

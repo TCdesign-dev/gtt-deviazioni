@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -11,6 +12,7 @@ import '../core/models/notice.dart';
 import '../core/models/transit.dart';
 import '../core/pipeline/vehicle_watch.dart';
 import 'settings.dart';
+import 'status_cache.dart';
 
 /// A che punto e' l'avvio.
 enum LoadState { idle, loading, ready, error }
@@ -257,6 +259,16 @@ class AppRepository extends ChangeNotifier {
       ).build(settings.watchlist);
 
       _service = _buildService();
+
+      // Gli esiti dell'ultima volta: senza, riaprire l'app significava
+      // rifare tutti i controlli, e con cinquanta richieste al giorno
+      // bastavano due riaperture per bruciare la quota.
+      final salvati = await StatusCache.load(index!);
+      _statuses.addAll(salvati);
+      for (final e in salvati.entries) {
+        _checkedAt[e.key] = e.value.checkedAt;
+      }
+
       state = LoadState.ready;
       phase = '';
       progress = 1;
@@ -363,6 +375,8 @@ class AppRepository extends ChangeNotifier {
         },
       );
       _checkedAt[line.routeId] = DateTime.now();
+      unawaited(StatusCache.save(_statuses.values,
+          feedVersion: index?.feedVersion));
     } on Object catch (e) {
       // Una linea che fallisce non deve bloccare le altre.
       debugPrint('linea ${line.shortName}: $e');
@@ -377,6 +391,8 @@ class AppRepository extends ChangeNotifier {
   Future<void> removeLine(String line) async {
     await settings.removeLine(line);
     _statuses.clear();
+    _checkedAt.clear();
+    await StatusCache.clear();
     await initialise();
   }
 

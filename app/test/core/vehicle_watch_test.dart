@@ -90,7 +90,7 @@ void main() {
     // guardare, e dire "tutto bene" sarebbe inventare.
     final r = await run([[], []]);
     expect(r.outcome, equals(WatchOutcome.nessunMezzo));
-    expect(r.summary, contains('non posso dire nulla'));
+    expect(r.summary, contains('non ci sono elementi'));
     expect(r.summary, isNot(contains('normale')));
   });
 
@@ -107,7 +107,7 @@ void main() {
 
     expect(r.outcome, equals(WatchOutcome.feedSpento));
     expect(r.summary, contains('non sta pubblicando'));
-    expect(r.summary, contains('non vuol dire che il servizio sia finito'));
+    expect(r.summary, contains('servizio puo\' essere'));
     expect(r.summary, isNot(contains('Nessun mezzo di questa linea')));
   });
 

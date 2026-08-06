@@ -99,14 +99,15 @@ class WatchResult {
   String get summary => switch (outcome) {
         WatchOutcome.feedSpento =>
           'GTT non sta pubblicando le posizioni dei mezzi in questo momento. '
-              'Succede di notte, anche quando le corse continuano: non posso '
-              'guardare, ma non vuol dire che il servizio sia finito.',
+              'Succede di notte, anche quando le corse continuano: '
+              'l\'osservazione non e\' possibile, ma il servizio puo\' essere '
+              'attivo.',
         WatchOutcome.nessunMezzo =>
           'Nessun mezzo di questa linea è in circolazione adesso, mentre '
-              'altre linee ne hanno: non posso dire nulla sulla deviazione.',
+              'altre linee ne hanno: non ci sono elementi sulla deviazione.',
         WatchOutcome.inconcludente =>
-          'Ho visto $vehiclesSeen ${vehiclesSeen == 1 ? "mezzo" : "mezzi"} '
-              'ma per troppo poco tempo per trarne una conclusione.',
+          '$vehiclesSeen ${vehiclesSeen == 1 ? "mezzo osservato" : "mezzi osservati"}, '
+              'ma per troppo poco tempo per concludere.',
         WatchOutcome.tuttiSulPercorso =>
           '$vehiclesSeen ${vehiclesSeen == 1 ? "mezzo segue" : "mezzi seguono"} '
               'il percorso normale.',

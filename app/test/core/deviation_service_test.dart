@@ -38,14 +38,14 @@ void main() {
     // no. Dire "mezzanotte UTC" alle 01:17 sembra semplicemente sbagliato.
     final msg = why('LlmException(429): free-models-per-day exceeded',
         retryAfter: DateTime(2026, 8, 1, 2, 0));
-    expect(msg, contains('richieste gratuite'));
+    expect(msg, contains('Richieste gratuite'));
     expect(msg, contains('02:00'));
     expect(msg, isNot(contains('UTC')));
   });
 
   test('senza orario dal fornitore, traduce comunque in ora italiana', () {
     final msg = why('LlmException(429): free-models-per-day exceeded');
-    expect(msg, contains('richieste gratuite'));
+    expect(msg, contains('Richieste gratuite'));
     expect(msg, contains('2 di notte'));
   });
 

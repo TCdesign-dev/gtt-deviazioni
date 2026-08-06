@@ -86,9 +86,9 @@ class LiveWatchCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Guardo le posizioni reali e le disegno sulla mappa. Serve a '
-              'capire se la deviazione è in corso o se è già finita — GTT '
-              'la fine non la annuncia quasi mai.',
+              'Le posizioni reali dei mezzi, sulla mappa. Servono a capire '
+              'se la deviazione è in corso o già finita: GTT la fine non la '
+              'annuncia quasi mai.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
@@ -148,8 +148,8 @@ class LiveWatchCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Sto guardando la $altraLinea: se cominci qui, '
-                    'quella si ferma.',
+                    'Osservazione in corso sulla $altraLinea: cominciando '
+                    'qui, quella si ferma.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.outline),
                   ),
@@ -187,7 +187,7 @@ class _Progress extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           tracks.isEmpty
-              ? 'sto guardando… ($samples ${samples == 1 ? "controllo" : "controlli"})'
+              ? 'osservazione in corso · $samples ${samples == 1 ? "controllo" : "controlli"}'
               : '${tracks.length} ${tracks.length == 1 ? "mezzo" : "mezzi"} '
                   'sulla mappa'
                   '${off > 0 ? ", di cui $off fuori percorso" : ""}',
@@ -265,9 +265,9 @@ class _Outcome extends StatelessWidget {
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               result.vehiclesSeen == 1
-                  ? 'Su un mezzo solo: prendilo con le pinze.'
-                  : 'Pochi mezzi seguiti abbastanza a lungo: '
-                      'prendilo con le pinze.',
+                  ? 'Un mezzo solo: dato poco solido.'
+                  : 'Pochi mezzi osservati abbastanza a lungo: '
+                      'dato poco solido.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -309,7 +309,7 @@ class _Osservato extends StatelessWidget {
     if (rientra != null) {
       frase.write(' e rientrano a ${rientra.name}');
     } else {
-      frase.write('. Non li ho ancora visti rientrare');
+      frase.write('. Rientro non ancora osservato');
     }
     frase.write('.');
 

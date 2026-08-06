@@ -42,9 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
-                'Poche linee, quelle che prendi davvero. Il calcolo avviene '
-                'per singola linea: è il vincolo sul suo percorso che rende '
-                'affidabile il resto.',
+                'Poche linee, quelle che prendi davvero: il controllo '
+                'avviene per singola linea.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

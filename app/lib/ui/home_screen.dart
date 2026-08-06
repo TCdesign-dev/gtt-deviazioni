@@ -78,7 +78,7 @@ class HomeScreen extends StatelessWidget {
         title: 'Nessuna linea',
         detail:
             'Aggiungi le linee che prendi di solito.\n'
-            'Il sistema lavora su quelle, non su tutta la rete.',
+            'Il controllo avviene per singola linea.',
         action: FilledButton.icon(
           onPressed: () => Navigator.push(
             context,
@@ -156,7 +156,7 @@ class _KeyBanner extends StatelessWidget {
         leading: const Icon(Icons.key_outlined),
         title: const Text('Manca la chiave'),
         subtitle: const Text(
-          'Senza chiave non posso leggere il testo degli avvisi.',
+          'Serve per leggere il testo degli avvisi.',
         ),
         onTap: onTap,
       ),
@@ -188,8 +188,8 @@ class _Loading extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'La prima volta scarico gli orari di GTT: sono 24 MB.\n'
-              'Poi non serve più per una settimana.',
+              'Al primo avvio vengono scaricati gli orari di GTT: 24 MB.\n'
+              'Poi non servono per una settimana.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),

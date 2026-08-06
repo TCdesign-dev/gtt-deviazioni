@@ -580,9 +580,9 @@ class _OriginalTextState extends State<_OriginalText> {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'GTT lo pubblica sia negli avvisi sia nella tabella delle '
-                'variazioni. Qui c\'è il testo più completo dei due, con le '
-                'date della tabella.',
+                'Pubblicato sia negli avvisi sia nella tabella delle '
+                'variazioni: qui il testo più completo dei due, con le date '
+                'della tabella.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

@@ -154,9 +154,9 @@ class LineTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     watchedVehicles == 0
-                        ? 'sto guardando i mezzi…'
-                        : 'sto guardando $watchedVehicles '
-                              '${watchedVehicles == 1 ? "mezzo" : "mezzi"}',
+                        ? 'osservazione in corso…'
+                        : '$watchedVehicles ${watchedVehicles == 1 ? "mezzo" : "mezzi"} '
+                              'in osservazione',
                     style: TextStyle(color: Colors.blue.shade700),
                   ),
                 ),
@@ -164,7 +164,7 @@ class LineTile extends StatelessWidget {
             )
           : checking
           ? Text(
-              phase ?? 'controllo…',
+              phase ?? 'controllo in corso…',
               style: TextStyle(color: scheme.primary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

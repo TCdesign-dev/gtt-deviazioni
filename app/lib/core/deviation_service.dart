@@ -217,11 +217,11 @@ class DeviationService {
       throw StateError('nessuna geometria per ${line.shortName}');
     }
 
-    if (allNotices == null) onProgress?.call('chiedo gli avvisi a GTT');
+    if (allNotices == null) onProgress?.call('Avvisi di GTT');
     final notices = noticesFor(line, allNotices ?? await fetchAllNotices());
     final reports = <DeviationReport>[];
 
-    if (notices.isEmpty) onProgress?.call('nessun avviso su questa linea');
+    if (notices.isEmpty) onProgress?.call('Nessun avviso su questa linea');
 
     for (var i = 0; i < notices.length; i++) {
       final notice = notices[i];
@@ -229,15 +229,16 @@ class DeviationService {
       // cosa che fa capire quanto manca. Un controllo puo' durare mezzo
       // minuto, e mezzo minuto davanti a una rotella muta sembra un
       // blocco.
-      final quale =
-          notices.length == 1 ? 'l\'avviso' : 'avviso ${i + 1} di ${notices.length}';
-      onProgress?.call('leggo $quale');
+      final quale = notices.length == 1
+          ? 'Avviso'
+          : 'Avviso ${i + 1} di ${notices.length}';
+      onProgress?.call(quale);
       // Un avviso puo' riguardare una direzione sola, o entrambe. Va
       // analizzato contro il percorso GIUSTO, altrimenti le fermate
       // saltate sono quelle dell'altro senso di marcia.
       for (final s in shapesConcernedBy(notice, andata, ritorno)) {
         reports.add(await _analyze(notice, s,
-            onProgress: (p) => onProgress?.call('$quale: $p')));
+            onProgress: (p) => onProgress?.call('$quale · $p')));
       }
     }
 
@@ -312,26 +313,24 @@ class DeviationService {
       // mezzanotte UTC" sembra sbagliato quando la mezzanotte e' passata
       // da un'ora.
       final when = _localTime(r.retryAfter);
-      return 'Ho finito le richieste gratuite di oggi (sono 50). '
+      return 'Richieste gratuite esaurite: sono 50 al giorno. '
           '${when == null ? "Si azzerano a mezzanotte UTC, cioè alle 2 di "
               "notte in Italia." : "Riprova dopo le $when."}';
     }
     if (detail.contains('429')) {
-      return 'Il servizio è momentaneamente sovraccarico. Riprova fra poco.';
+      return 'Servizio momentaneamente sovraccarico. Riprova fra poco.';
     }
     if (detail.contains('401') || detail.contains('403')) {
       return 'La chiave non è valida. Controllala nelle impostazioni.';
     }
     if (detail.contains('non raggiungibile') ||
         detail.contains('TimeoutException')) {
-      return 'Non sono riuscito a contattare il servizio. '
-          'Controlla la connessione.';
+      return 'Servizio non raggiungibile. Controlla la connessione.';
     }
     if (r.status == ExtractionStatus.parseFailed) {
-      return 'Ho letto l\'avviso ma non sono riuscito a ricavarne '
-          'il percorso.';
+      return 'Testo letto, ma il percorso non e\' ricavabile.';
     }
-    return 'Non sono riuscito a interpretare il testo dell\'avviso.';
+    return 'Testo dell\'avviso non interpretabile.';
   }
 
   /// L'orario in cui riprovare, nel fuso di chi legge.
@@ -348,7 +347,7 @@ class DeviationService {
     void Function(String phase)? onProgress,
   }) async {
     // 1. Testo -> struttura.
-    onProgress?.call('interpreto il testo');
+    onProgress?.call('interpretazione del testo');
     final extraction = await _extractor.extract(notice);
     if (!extraction.isUsable) {
       // L'LLM non ha risposto — quota finita, rete, servizio giu'. Ma se
@@ -369,7 +368,7 @@ class DeviationService {
           // abbiamo ricostruito.
           confidence: Confidence.probabile,
           whyIncomplete: 'La fermata sospesa la dichiara GTT, quella è '
-              'certa. Del resto dell\'avviso non so dirti: '
+              'certa. Il resto dell\'avviso non e\' stato letto: '
               '${_lowerFirst(explainExtractionFailure(extraction))}',
         );
       }
@@ -418,7 +417,7 @@ class DeviationService {
         whyIncomplete: impact.hasImpact
             ? null
             : 'GTT nomina ${declaredCodes.length == 1 ? "una fermata" : "delle fermate"} '
-                '(${declaredCodes.join(", ")}) che non trovo su questa linea: '
+                '(${declaredCodes.join(", ")}) non risultano su questa linea: '
                 'potrebbe riguardarne un\'altra',
       );
     }
@@ -443,7 +442,7 @@ class DeviationService {
       // Il geocoding e' il passaggio piu' lento: una chiamata per via,
       // con le pause di cortesia verso Photon. Vale la pena dire a che
       // punto e', e quale via si sta cercando.
-      onProgress?.call('cerco «$t» sulla mappa (${i + 1}/${toponyms.length})');
+      onProgress?.call('ricerca di «$t» (${i + 1}/${toponyms.length})');
       final r = await _geocoder.locate(t,
           near: shape, municipality: parsed.municipality);
       if (r.isUsable) {
@@ -458,7 +457,7 @@ class DeviationService {
         shape: shape,
         parsed: parsed,
         confidence: Confidence.soloTesto,
-        whyIncomplete: 'non ho trovato sulla mappa: ${unresolved.join(", ")}',
+        whyIncomplete: 'non trovate sulla mappa: ${unresolved.join(", ")}',
       );
     }
 
@@ -491,7 +490,7 @@ class DeviationService {
     ];
 
     // 3. Punti -> percorso vero, con le cinque prove.
-    onProgress?.call('calcolo il percorso deviato');
+    onProgress?.call('calcolo del percorso');
     final route = await _router.build(
       waypoints: waypoints,
       officialRoute: shape,
@@ -507,7 +506,7 @@ class DeviationService {
         parsed: parsed,
         rejoin: rejoin,
         confidence: Confidence.soloTesto,
-        whyIncomplete: 'non sono riuscito a tracciare il percorso deviato',
+        whyIncomplete: 'percorso deviato non tracciabile',
       );
     }
 
@@ -535,7 +534,7 @@ class DeviationService {
           ? null
           : [
               if (unresolved.isNotEmpty)
-                'non ho trovato: ${unresolved.join(", ")}',
+                'non trovate: ${unresolved.join(", ")}',
               if (!rejoin.isUsable && rejoin.whyNot != null) rejoin.whyNot!,
               ...route.failures.map((f) => f.message),
             ].join('; '),

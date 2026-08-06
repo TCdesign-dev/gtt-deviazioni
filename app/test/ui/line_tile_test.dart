@@ -54,7 +54,7 @@ void main() {
     );
 
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
-    expect(find.text('controllo…'), findsOneWidget);
+    expect(find.text('controllo in corso…'), findsOneWidget);
   });
 
   testWidgets('il riassunto vecchio sparisce mentre si ricontrolla', (
@@ -145,7 +145,7 @@ void main() {
       ),
     );
 
-    expect(find.text('sto guardando 3 mezzi'), findsOneWidget);
+    expect(find.text('3 mezzi in osservazione'), findsOneWidget);
     expect(find.byIcon(Icons.directions_bus), findsOneWidget);
     // Prende il posto del riassunto: quello non e' cio' che sta
     // succedendo adesso.
@@ -167,7 +167,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('sto guardando 1 mezzo'), findsOneWidget);
+    expect(find.text('1 mezzo in osservazione'), findsOneWidget);
   });
 
   testWidgets('prima di vedere qualcosa non dice "zero mezzi"', (tester) async {
@@ -185,7 +185,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('sto guardando i mezzi…'), findsOneWidget);
+    expect(find.text('osservazione in corso…'), findsOneWidget);
   });
 }
 

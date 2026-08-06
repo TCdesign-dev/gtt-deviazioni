@@ -108,7 +108,7 @@ class _WatchBannerState extends State<WatchBanner> {
       return d.inMinutes < 1 ? 'in continuo' : 'da ${d.inMinutes} min';
     }
     final resta = repo.watchRemaining ?? Duration.zero;
-    if (resta.inSeconds <= 0) return 'sto finendo';
+    if (resta.inSeconds <= 0) return 'in chiusura';
     if (resta.inSeconds < 60) return 'ancora ${resta.inSeconds} s';
     // Si arrotonda per ECCESSO al minuto: "ancora 1 min" quando ne
     // restano 70 secondi sarebbe una bugia breve ma fastidiosa. E si usa
@@ -151,7 +151,7 @@ class _Striscia extends StatelessWidget {
                   child: Text(
                     // Numero della linea, quanti mezzi, quanto manca: le
                     // tre cose che uno vuole sapere senza aprire niente.
-                    '$linea · ${mezzi == 0 ? "cerco i mezzi" : "$mezzi ${mezzi == 1 ? "mezzo" : "mezzi"}"} · $tempo',
+                    '$linea · ${mezzi == 0 ? "in attesa di mezzi" : "$mezzi ${mezzi == 1 ? "mezzo" : "mezzi"}"} · $tempo',
                     style: TextStyle(color: blu, fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

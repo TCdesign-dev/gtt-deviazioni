@@ -66,10 +66,10 @@ class GtfsDownloader {
     directory.createSync(recursive: true);
     final zip = File('${directory.path}/gtt_gtfs.zip');
 
-    onProgress?.call('scarico gli orari di GTT', 0.0);
+    onProgress?.call('Scaricamento orari GTT', 0.0);
     await _download(zip, onProgress);
 
-    onProgress?.call('estraggo i dati', 0.75);
+    onProgress?.call('Estrazione dei dati', 0.75);
     _extract(zip);
 
     // Lo zip non serve piu': sono 24 MB sul telefono.
@@ -108,7 +108,7 @@ class GtfsDownloader {
         received += chunk.length;
         if (total > 0) {
           // Lo scaricamento vale il 75% dell'attesa complessiva.
-          onProgress?.call('scarico gli orari di GTT',
+          onProgress?.call('Scaricamento orari GTT',
               0.75 * received / total);
         }
       }

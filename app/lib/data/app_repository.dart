@@ -246,7 +246,7 @@ class AppRepository extends ChangeNotifier {
         },
       );
 
-      phase = 'preparo le tue linee';
+      phase = 'Preparazione delle linee';
       notifyListeners();
 
       index = await GtfsParser(
@@ -301,7 +301,7 @@ class AppRepository extends ChangeNotifier {
     if (service == null || index == null) return;
 
     state = LoadState.loading;
-    phase = 'controllo gli avvisi di GTT';
+    phase = 'Avvisi di GTT';
     notifyListeners();
 
     try {
@@ -343,7 +343,7 @@ class AppRepository extends ChangeNotifier {
     if (service == null || _busy.contains(line.routeId)) return;
 
     _busy.add(line.routeId);
-    _phaseOf[line.routeId] = 'chiedo gli avvisi a GTT';
+    _phaseOf[line.routeId] = 'Avvisi di GTT';
     error = null;
     notifyListeners();
 
@@ -405,7 +405,7 @@ class AppRepository extends ChangeNotifier {
   static String _readable(Object e) {
     final s = e.toString();
     if (s.contains('SocketException') || s.contains('non raggiungibile')) {
-      return 'Non riesco a raggiungere la rete. Riprova quando hai '
+      return 'Rete non raggiungibile. Riprova quando hai '
           'connessione.';
     }
     return s;

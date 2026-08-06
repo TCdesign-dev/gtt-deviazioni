@@ -305,7 +305,7 @@ class _LineMapState extends State<LineMap> {
                           ? Icons.my_location
                           : Icons.location_searching,
                       tooltip: _locationSub != null
-                          ? 'Smetti di seguirmi'
+                          ? 'Smetti di seguire'
                           : 'Dove sono',
                       active: _locationSub != null,
                       busy: _locating,

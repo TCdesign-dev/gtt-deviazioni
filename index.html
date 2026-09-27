@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeviaTo — La tua fermata è ancora servita?</title>
+<meta name="description" content="Quando GTT devia un bus o un tram a Torino, DeviaTo ti dice se dalla tua fermata passa ancora e, se no, dove andare a prenderlo. Gratis.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1e1e1e" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="stile.css">
+</head>
+<body>
+
+<a class="salta-al-contenuto" href="#contenuto">Vai al contenuto</a>
+
+<!-- Icone, disegnate per il sito: si richiamano con <use href="#i-…"> -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-bus" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="15" rx="3"/><path d="M5 11h14M8.5 18v2.5M15.5 18v2.5M8.5 14.5h.01M15.5 14.5h.01"/></symbol>
+  <symbol id="i-telefono" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+</svg>
+
+
+<header class="testata">
+  <div class="contenitore">
+    <a class="marchio" href="./">
+      <picture>
+        <source srcset="img/logo-scuro.svg" media="(prefers-color-scheme: dark)">
+        <img src="img/logo-chiaro.svg" width="637" height="194" alt="DeviaTo">
+      </picture>
+    </a>
+    <nav aria-label="Pagine">
+      <a class="facoltativo" href="#app">Come si usa</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+  </div>
+</header>
+
+<main id="contenuto">
+
+<!-- ------------------------------------------------------------ apertura -->
+<section class="apertura" aria-labelledby="titolo">
+  <div class="contenitore">
+    <h1 id="titolo">La tua fermata è ancora servita?</h1>
+
+    <div class="apertura-sotto">
+      <p class="guida">Quando GTT devia un bus o un tram, l'avviso elenca le vie del nuovo percorso. A te serve sapere un'altra cosa: se dalla tua fermata il bus passa ancora e, se no, dove andare a prenderlo. DeviaTo te lo dice.</p>
+      <div class="arrivo-app">
+        <p class="store"><svg class="icona" aria-hidden="true"><use href="#i-telefono"/></svg>Presto su App Store e Google Play</p>
+        <p class="nota">È gratis e non serve registrarsi.</p>
+      </div>
+    </div>
+
+    <!-- Il caso reale del 26 settembre 2026. Fermate e codici dagli orari
+         GTT (GTFS), nell'ordine in cui la linea le percorre. -->
+    <figure class="cartello" aria-labelledby="cartello-titolo">
+      <figcaption class="cartello-testa" id="cartello-titolo">
+        <span class="numero-linea"><svg class="icona" aria-hidden="true"><use href="#i-bus"/></svg><span class="solo-lettori">Linea </span>10N</span>
+        <span>verso piazza XVIII Dicembre</span>
+        <span class="data">26 settembre 2026</span>
+      </figcaption>
+
+      <div class="tracciato">
+        <ol class="schema" aria-label="Le fermate in questa direzione">
+          <li class="aperta dismesso"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Vibò</span><span class="codice">1410</span><span class="sali">sali qui</span></span></li>
+          <li class="chiusa dismesso" style="--i:0"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Largo Giachino Sud</span><span class="codice">422</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:1"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Verolengo</span><span class="codice">1758</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:2"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Brin</span><span class="codice">1760</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:3"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Mortara</span><span class="codice">1762</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:4"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Treviso</span><span class="codice">1764</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:5"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Umbria</span><span class="codice">2170</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:6"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Regina Margherita</span><span class="codice">1911</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:7"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Industria</span><span class="codice">193</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="chiusa dismesso" style="--i:8"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Principe Eugenio</span><span class="codice">2174</span><span class="solo-lettori">, non servita</span></span></li>
+          <li class="aperta"><span class="punto" aria-hidden="true"></span><span class="fermata-testo"><span class="nome">Statuto Nord</span><span class="codice">373</span><span class="sali">sali qui</span></span></li>
+        </ol>
+        <span class="deviazione" aria-hidden="true"></span>
+      </div>
+
+      <div class="esito">
+        <div class="conta">
+          <span class="cifra">16</span>
+          <p><span class="chi">avvisi di GTT</span>Uno per ogni fermata sospesa, nelle due direzioni.</p>
+        </div>
+        <div class="conta risposta">
+          <span class="cifra">1</span>
+          <p><span class="chi">risposta di DeviaTo</span>Nove fermate di fila non servite. Sali a Vibò o a Statuto Nord.</p>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ---------------------------------------------------------- come si usa -->
+<section class="sezione piena" id="app" aria-labelledby="app-titolo">
+  <div class="contenitore">
+    <h2 id="app-titolo">Come si usa</h2>
+    <p class="intro">Funziona con tutte le linee GTT: tram e bus, urbane ed extraurbane.</p>
+
+    <div class="schermate">
+      <figure class="schermata">
+        <div class="telefono">
+          <picture>
+            <source srcset="img/home.webp" type="image/webp">
+            <img src="img/home.jpg" width="600" height="1304" loading="lazy"
+                 alt="La home di DeviaTo. In cima la fermata salvata, Mongreno sulla linea 15, con scritto Servita. Sotto, sei linee: la 4 ha il percorso regolare, la 9 ha 10 fermate non servite, la 10N 15, la 15 15 fino al 28 settembre, la 55 13 e la 68 14.">
+          </picture>
+        </div>
+        <figcaption>
+          <h3><span class="passo">1</span>Scegli le tue linee</h3>
+          <p>Tocca + e aggiungi le linee che prendi. Nella schermata principale vedi subito quali sono deviate e quante fermate saltano.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="schermata">
+        <div class="telefono">
+          <picture>
+            <source srcset="img/linea.webp" type="image/webp">
+            <img src="img/linea.jpg" width="600" height="1304" loading="lazy"
+                 alt="La linea 55: 13 fermate non servite. Verso via Moncalieri non passa da Farini capolinea a Castello, si sale a Bertola; non passa da Palagiustizia, si sale a Porta Susa Sud o a Ferrucci. Verso corso Farini salta 4 fermate di fila, da Castello a Vittorio Veneto. Sotto, la mappa col percorso deviato in rosso.">
+          </picture>
+        </div>
+        <figcaption>
+          <h3><span class="passo">2</span>Apri quella deviata</h3>
+          <p>Per ogni direzione trovi le fermate dove il bus non passa e la più vicina dove prenderlo. Tocca la tua fermata sulla mappa per salvarla: la ritrovi in cima, appena apri l'app.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="schermata">
+        <div class="telefono">
+          <picture>
+            <source srcset="img/mappa.webp" type="image/webp">
+            <img src="img/mappa.jpg" width="600" height="1304" loading="lazy"
+                 alt="La mappa a tutto schermo della linea 55: il percorso deviato in rosso, le fermate saltate segnate con una croce e due bus con la freccia della direzione. A destra i comandi Tutta la linea, 4 mezzi · Interrompi e Dove sono.">
+          </picture>
+        </div>
+        <figcaption>
+          <h3><span class="passo">3</span>Guarda dove sono i bus</h3>
+          <p>Sulla mappa grande il giro deviato è in rosso. Con «Segui i mezzi» vedi i bus in tempo reale e dove vanno: se ripassano dal percorso normale, la deviazione probabilmente è finita.</p>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- --------------------------------------------------- onestà e privacy -->
+<section class="sezione comportamento" aria-labelledby="motto">
+  <div class="contenitore">
+    <p class="motto" id="motto">Meglio nessuna mappa che una mappa <mark>sbagliata</mark></p>
+
+    <div class="due">
+      <div>
+        <h3>Da dove vengono i percorsi</h3>
+        <p>Negli avvisi GTT descrive la deviazione a parole, via per via. DeviaTo la ridisegna sulla mappa e poi la ricontrolla. Se qualcosa non torna, non disegna niente e ti mostra l'avviso com'è.</p>
+      </div>
+      <div>
+        <h3>I tuoi dati</h3>
+        <p>Non devi registrarti e l'app non raccoglie dati personali. La posizione è facoltativa e resta sul telefono. Il sito non usa cookie. Più dettagli nella pagina sulla <a href="privacy.html">privacy</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------- domande -->
+<section class="sezione" aria-labelledby="domande-titolo">
+  <div class="contenitore">
+    <h2 id="domande-titolo">Domande</h2>
+    <div class="domande">
+      <div>
+        <h3>È un'app di GTT?</h3>
+        <p>No, e non è collegata a GTT. Usa i dati che GTT mette a disposizione di chiunque voglia riusarli. Se l'app e l'avviso dicono cose diverse, vale l'avviso.</p>
+      </div>
+      <div>
+        <h3>Posso fidarmi di quello che dice?</h3>
+        <p>Quando GTT sospende una fermata indicandone il numero, sì. Quando descrive un giro di vie, il percorso l'ha ricostruito l'app e può sbagliare: per questo ogni deviazione porta un'etichetta, «Verificato» o «Da confermare», e l'avviso originale è sempre in fondo alla linea.</p>
+      </div>
+      <div>
+        <h3>Ogni quanto si aggiorna?</h3>
+        <p>Di giorno ogni mezz'ora, la sera ogni ora, di notte più di rado. Le posizioni dei bus sulla mappa invece sono in tempo reale.</p>
+      </div>
+      <div>
+        <h3>Mi avvisa se la mia linea devia?</h3>
+        <p>Non ancora. Per ora le novità si vedono aprendo l'app.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------- errori e contatto -->
+<section class="sezione piena" aria-labelledby="scrivi-titolo">
+  <div class="contenitore scrivi">
+    <h2 id="scrivi-titolo">Hai trovato un errore?</h2>
+    <p>Se DeviaTo segna chiusa una fermata dove il bus passa, o il contrario, scrivimi. Dimmi la linea, la fermata e quando è successo: mi serve per capire cosa è andato storto.</p>
+    <a class="bottone" href="mailto:devia.to@icloud.com?subject=DeviaTo">Scrivi a devia.to@icloud.com</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="piede">
+  <div class="contenitore">
+    <a class="marchio" href="./"><img src="img/logo-scuro.svg" width="637" height="194" alt="DeviaTo"></a>
+    <p class="arrivo">Presto su App Store e Google Play</p>
+    <nav aria-label="Link">
+      <a href="privacy.html">Privacy</a>
+      <a href="mailto:devia.to@icloud.com">Contatti</a>
+      <a href="https://github.com/TCdesign-dev/deviato">Codice su GitHub</a>
+    </nav>
+    <p class="servizio" id="servizio" hidden><span class="spia" aria-hidden="true"></span><span id="servizio-testo"></span></p>
+    <div class="fonti">
+      <p><a href="https://www.gtt.to.it">Data source: GTT S.p.A. – Gruppo Torinese Trasporti</a></p>
+      <p>Mappe dell'app © <a href="https://www.openstreetmap.org/copyright">contributori di OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a></p>
+      <p>DeviaTo non è un'app di GTT e non è collegata a GTT.</p>
+      <p>© 2026 Tommaso Costanza</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Lo stato del servizio: quando i dati sono stati pubblicati l'ultima
+  // volta. Non l'esito dei giri: se l'ora smette di avanzare qualcosa si e'
+  // rotto, qualunque cosa sia (il giro, cron-job.org, GitHub). I giri sono
+  // ogni mezz'ora di giorno e radi di notte: in ritardo oltre un'ora e
+  // mezza dalle 7 a mezzanotte, oltre quattro ore di notte. Senza dati la
+  // riga non si mostra.
+  (async () => {
+    try {
+      const r = await fetch('v1/indice.json', { cache: 'no-store' });
+      const { generato } = await r.json();
+      // Sei decimali nei secondi: Safari ne vuole tre.
+      const quando = new Date(String(generato).replace(/(\.\d{3})\d+/, '$1'));
+      if (isNaN(quando)) return;
+      const adesso = new Date();
+      const fuso = { timeZone: 'Europe/Rome' };
+      const giorno = d => d.toLocaleDateString('it-IT', { ...fuso, day: '2-digit', month: '2-digit' });
+      const orario = quando.toLocaleTimeString('it-IT', { ...fuso, hour: '2-digit', minute: '2-digit' });
+      const quale = giorno(quando) === giorno(adesso) ? `alle ${orario}` : `del ${giorno(quando)} alle ${orario}`;
+      const ora = Number(adesso.toLocaleString('it-IT', { ...fuso, hour: 'numeric', hour12: false }));
+      const ritardo = adesso - quando > (ora < 7 ? 240 : 90) * 60000;
+      const riga = document.getElementById('servizio');
+      riga.classList.toggle('in-ritardo', ritardo);
+      document.getElementById('servizio-testo').textContent = ritardo
+        ? `Aggiornamento in ritardo: ultimi dati ${quale}`
+        : `Servizio attivo: dati aggiornati ${quale}`;
+      riga.hidden = false;
+    } catch (_) {}
+  })();
+</script>
+
+</body>
+</html>

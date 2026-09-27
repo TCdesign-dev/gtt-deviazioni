@@ -1,0 +1,836 @@
+/* DeviaTo — un solo foglio di stile per index.html e privacy.html.
+
+   I colori sono quelli del marchio: grafite, bianco e il giallo di "To".
+   Il giallo è il colore della deviazione, come i cartelli provvisori dei
+   cantieri: si usa come campitura o come linea, mai come colore del testo
+   su fondo chiaro.
+
+   Nessuna risorsa da altri server: i caratteri sono in font/. */
+
+/* ------------------------------------------------------------ caratteri */
+
+/* Boldonse (SIL Open Font License), il carattere del marchio: solo i titoli
+   grandi (apertura, sezioni, motto).
+   Boldonse disegna le lettere molto più grandi del suo corpo (maiuscole a
+   1,19 em contro 0,71 di Geist): size-adjust lo riporta a una misura
+   paragonabile, così le dimensioni scritte sotto valgono per entrambi e la
+   pagina non salta quando il carattere arriva. */
+@font-face {
+  font-family: "Boldonse";
+  src: url("font/boldonse.woff") format("woff");
+  size-adjust: 80%;
+  ascent-override: 128%;
+  descent-override: 34%;
+  line-gap-override: 0%;
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Geist (SIL Open Font License), fissato al peso 800: gli altri titoli. */
+@font-face {
+  font-family: "Geist";
+  src: url("font/geist.woff") format("woff");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Onest (SIL Open Font License), variabile 100–900: il testo. */
+@font-face {
+  font-family: "Onest";
+  src: url("font/onest.woff") format("woff");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------------- colori */
+
+:root {
+  color-scheme: light dark;
+
+  --grafite: #1e1e1e;
+  --giallo: #f3d547;
+
+  /* chiaro: il bianco del marchio diventa fondo, la grafite diventa testo */
+  --fondo: #ffffff;
+  --superficie: #f3f3f1;
+  --testo: #1e1e1e;
+  --tenue: #5b5b5b;        /* 6.8:1 sul bianco */
+  --filo: #dcdcd8;
+  --fuoco: #1e1e1e;
+
+  /* sul cartello giallo, uguali nei due temi */
+  --su-giallo: #1e1e1e;
+  --su-giallo-tenue: #4f4818;   /* 6.3:1 sul giallo */
+  --su-giallo-spento: rgb(30 30 30 / .32);
+
+  --titolo: "Geist", "Onest", system-ui, sans-serif;
+  --titolo-grande: "Boldonse", "Geist", "Onest", system-ui, sans-serif;
+  --corpo: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --misura: 72rem;
+  --margine: 1rem;
+  --spessore: 6px;
+  --raggio: 1.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #1e1e1e;
+    --superficie: #282828;
+    --testo: #ffffff;
+    --tenue: #b9b9b9;      /* 8.5:1 sulla grafite */
+    --filo: #3a3a3a;
+    --fuoco: #f3d547;
+  }
+}
+
+/* ----------------------------------------------------------------- base */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--testo);
+  font-family: var(--corpo);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  font-synthesis: none;
+}
+
+img, svg { display: block; max-width: 100%; height: auto; }
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .2em;
+}
+a:hover {
+  background: var(--giallo);
+  color: var(--grafite);
+  text-decoration: none;
+}
+:focus-visible {
+  outline: 3px solid var(--fuoco);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+h1, h2, h3, p { margin: 0; }
+
+h1, h2, .motto, .arrivo {
+  font-family: var(--titolo);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.apertura h1, .sezione h2, .motto, .pagina h1 {
+  font-family: var(--titolo-grande);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+h3 {
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+/* icone: disegnate a tratto, prendono il colore del testo */
+.icona {
+  display: inline-block;
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.2em;
+}
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+mark {
+  background: var(--giallo);
+  color: var(--grafite);
+  padding: 0 .12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.solo-lettori {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.salta-al-contenuto {
+  position: absolute;
+  left: var(--margine);
+  top: -4rem;
+  z-index: 10;
+  padding: .5rem .75rem;
+  background: var(--giallo);
+  color: var(--grafite);
+}
+.salta-al-contenuto:focus { top: .5rem; }
+
+.contenitore {
+  width: 100%;
+  max-width: var(--misura);
+  margin: 0 auto;
+  padding: 0 var(--margine);
+}
+
+/* --------------------------------------------------------------- testata */
+
+.testata .contenitore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: .75rem;
+  padding-bottom: .75rem;
+}
+
+.marchio {
+  display: block;
+  padding: .25rem 0;
+}
+.marchio:hover { background: none; }
+.marchio img { width: 7.5rem; }
+
+.testata nav {
+  display: flex;
+  gap: .25rem;
+  white-space: nowrap;
+  font-size: .9375rem;
+  font-weight: 500;
+}
+.testata nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 .5rem;
+  border-radius: 999px;
+  text-decoration: none;
+}
+@media (max-width: 23.99rem) {
+  .testata .facoltativo { display: none; }
+}
+
+/* -------------------------------------------------------------- apertura
+
+   Tre piani allineati a sinistra: il titolo; sotto un filo, la spiegazione
+   e l'arrivo sugli store che partono alla stessa altezza; poi il cartello. */
+
+.apertura { padding: 1.75rem 0 2.5rem; }
+
+.apertura h1 {
+  font-size: clamp(2.125rem, 11vw, 6.5rem);
+  max-width: 15ch;
+}
+
+.apertura-sotto {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--filo);
+  display: grid;
+  gap: 1.25rem;
+}
+
+.guida {
+  max-width: 34rem;
+  font-size: 1.1875rem;
+  line-height: 1.5;
+}
+
+.arrivo-app { display: grid; gap: .75rem; justify-items: start; }
+.arrivo-app .nota { font-size: .9375rem; font-weight: 500; color: var(--tenue); }
+
+.store {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem 1rem .55rem .8rem;
+  border-radius: 1.25rem;
+  background: var(--testo);
+  color: var(--fondo);
+  font-weight: 600;
+  font-size: .9375rem;
+  line-height: 1.2;
+}
+
+/* ------------------------------------------- il cartello: la 10N il 26/09
+
+   Un cartello giallo, come quelli di deviazione provvisoria. Dentro, lo
+   schema della linea: tratteggiato dove il bus non passa, e la deviazione
+   come una linea spessa con gli angoli tondi, la stessa del marchio.
+   Sul telefono lo schema è verticale; sul desktop, orizzontale. */
+
+.cartello {
+  margin: 2rem 0 0;
+  padding: 1.25rem 1rem 1.5rem;
+  background: var(--giallo);
+  color: var(--su-giallo);
+  border-radius: var(--raggio);
+}
+
+.cartello-testa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem .75rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.2;
+}
+.numero-linea {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .6rem;
+  border-radius: .5rem;
+  background: var(--su-giallo);
+  color: var(--giallo);
+  font-family: var(--titolo);
+  font-weight: 800;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.cartello-testa .data {
+  flex-basis: 100%;
+  font-weight: 500;
+  font-size: .9375rem;
+  color: var(--su-giallo-tenue);
+}
+
+.tracciato {
+  --riga: 2.625rem;        /* altezza di una fermata */
+  --asse: 3.25rem;         /* posizione della linea da sinistra */
+  --punto: 1.25rem;
+  --n: 11;
+  --deviata: 8px;          /* la linea della deviazione, più spessa */
+  position: relative;
+  margin-top: 1rem;
+}
+
+.schema {
+  list-style: none;
+  margin: 0;
+  padding: var(--riga) 0;
+}
+
+.schema li {
+  position: relative;
+  height: var(--riga);
+  display: flex;
+  align-items: center;
+  padding-left: calc(var(--asse) + 1.25rem);
+}
+
+.schema li::before {                       /* tratto verso la fermata dopo */
+  content: "";
+  position: absolute;
+  left: calc(var(--asse) - var(--spessore) / 2);
+  top: 50%;
+  height: var(--riga);
+  border-top: 0;
+  border-left: var(--spessore) solid var(--su-giallo);
+}
+.schema li:first-child::after,
+.schema li:last-child::after {             /* la linea continua oltre */
+  content: "";
+  position: absolute;
+  left: calc(var(--asse) - var(--spessore) / 2);
+  height: var(--riga);
+  border-left: var(--spessore) dotted var(--su-giallo);
+}
+.schema li:first-child::after { bottom: 50%; }
+.schema li:last-child::after  { top: 50%; }
+.schema li:last-child::before { display: none; }
+
+.schema li.dismesso::before {
+  border-left: var(--spessore) dashed var(--su-giallo-spento);
+}
+
+.punto {
+  position: absolute;
+  left: calc(var(--asse) - var(--punto) / 2);
+  top: calc(50% - var(--punto) / 2);
+  width: var(--punto);
+  height: var(--punto);
+  border: 4px solid var(--su-giallo);
+  border-radius: 50%;
+  background: #ffffff;
+  z-index: 2;
+}
+
+.fermata-testo {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  white-space: nowrap;
+}
+.nome { font-weight: 600; font-size: 1.0625rem; line-height: 1.1; }
+.codice {
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--su-giallo-tenue);
+}
+
+.aperta .nome { font-weight: 800; }
+.aperta .codice { display: none; }   /* alle fermate aperte parla «sali qui» */
+.sali {
+  align-self: center;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  background: var(--su-giallo);
+  color: var(--giallo);
+  font-size: .8125rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.chiusa .punto {
+  background: var(--giallo);
+  border-color: var(--su-giallo-spento);
+}
+.chiusa .punto::before,
+.chiusa .punto::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--su-giallo);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.chiusa .punto::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.chiusa .nome {
+  font-weight: 500;
+  color: var(--su-giallo-tenue);
+  text-decoration: line-through 2px var(--su-giallo);
+}
+
+/* la deviazione: lascia la linea a Vibò e la riprende a Statuto Nord */
+.deviazione {
+  position: absolute;
+  top: calc(var(--riga) * 1.5 - var(--deviata) / 2);
+  height: calc(var(--riga) * (var(--n) - 1) + var(--deviata));
+  left: calc(var(--asse) - 2.5rem);
+  width: calc(2.5rem + var(--spessore) / 2);
+  border: var(--deviata) solid var(--su-giallo);
+  border-right: 0;
+  border-radius: 1.125rem 0 0 1.125rem;
+  --clip-da: inset(0 0 100% 0);
+}
+
+/* l'esito: sedici avvisi, una risposta */
+.esito {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--su-giallo);
+  display: grid;
+  gap: 1rem;
+}
+.conta {
+  display: grid;
+  grid-template-columns: 4.25rem 1fr;
+  align-items: start;
+  gap: .75rem;
+}
+.cifra {
+  font-family: var(--titolo);
+  font-weight: 800;
+  font-size: 2.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.conta p { line-height: 1.4; }
+.conta .chi { display: block; font-weight: 700; }
+.conta.risposta .cifra {
+  justify-self: start;
+  padding: .1em .3em;
+  border-radius: .75rem;
+  background: var(--su-giallo);
+  color: var(--giallo);
+}
+
+/* --------------------------------------------------------------- sezioni */
+
+.sezione { padding: 3.5rem 0; }
+.sezione + .sezione { border-top: 1px solid var(--filo); }
+.sezione.piena { background: var(--superficie); border-top: 0; }
+.sezione.piena + .sezione { border-top: 0; }
+
+.sezione h2 {
+  font-size: clamp(1.5rem, 6.6vw, 3rem);
+  max-width: 18ch;
+}
+.intro {
+  margin-top: 1rem;
+  max-width: 36rem;
+  color: var(--tenue);
+}
+
+/* come si usa: tre schermate vere, dentro un telefono disegnato. Sul
+   telefono una sotto l'altra, sul desktop affiancate. */
+.schermate {
+  margin-top: 2.5rem;
+  display: grid;
+  gap: 3rem;
+  justify-items: center;
+}
+
+.schermata { margin: 0; width: min(17.5rem, 78vw); }
+.telefono {
+  position: relative;
+  padding: .6rem;
+  border-radius: 2.9rem;
+  background: #0f0f0f;
+  outline: 1px solid #3a3a3a;
+  outline-offset: -1px;
+}
+.telefono img {
+  width: 100%;
+  border-radius: 2.35rem;
+  background: #f7f8fc;
+}
+/* i tasti sul fianco */
+.telefono::before,
+.telefono::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  border-radius: 2px;
+  background: #3a3a3a;
+}
+.telefono::before { left: -3px; top: 18%; height: 3.25rem; }
+.telefono::after  { right: -3px; top: 25%; height: 4.5rem; }
+.schermata figcaption { margin-top: 1.5rem; }
+.schermata figcaption h3 {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+}
+.schermata figcaption p { margin-top: .5rem; color: var(--tenue); line-height: 1.5; }
+/* il numero del passo: una fermata gialla */
+.passo {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--giallo);
+  color: var(--grafite);
+  font-family: var(--titolo);
+  font-weight: 800;
+  font-size: 1.0625rem;
+  line-height: 1;
+}
+
+/* come si comporta */
+.motto {
+  line-height: 1.14;
+  font-size: clamp(2rem, 9vw, 3.75rem);
+  max-width: 16ch;
+}
+
+/* due blocchi uno sotto l'altro, separati da un filo come le domande */
+.due { margin-top: 2rem; display: grid; }
+.due div { padding: 1.25rem 0; border-top: 1px solid var(--filo); }
+.due div:last-child { padding-bottom: 0; }
+.due p { margin-top: .5rem; max-width: 34rem; color: var(--tenue); }
+.due p a, .domande p a { color: var(--testo); }
+
+/* domande: tutte aperte */
+.domande { margin-top: 2.25rem; display: grid; }
+.domande div { padding: 1.25rem 0; border-top: 1px solid var(--filo); }
+.domande p { margin-top: .5rem; max-width: 34rem; color: var(--tenue); }
+
+/* errori e contatto: il bottone della mail, largo quanto lo schermo sul
+   telefono */
+.scrivi p { margin-top: 1rem; max-width: 36rem; font-size: 1.1875rem; line-height: 1.5; }
+.bottone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  margin-top: 1.5rem;
+  padding: .75rem 1.5rem;
+  border-radius: 999px;
+  background: var(--giallo);
+  color: var(--grafite);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.bottone:hover { background: var(--testo); color: var(--fondo); }
+
+/* ------------------------------------------------------ piè di pagina
+
+   Sempre grafite, nei due temi: è il fondo del marchio. */
+
+.piede {
+  background: var(--grafite);
+  color: #ffffff;
+  padding: 3rem 0;
+  font-size: .9375rem;
+  border-top: 1px solid #3a3a3a;
+}
+.piede :focus-visible { outline-color: var(--giallo); }
+.piede .marchio img { width: 9rem; }
+.piede .arrivo {
+  margin-top: 1.75rem;
+  font-size: clamp(1.25rem, 5.5vw, 2rem);
+  max-width: 20ch;
+}
+.piede nav {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+}
+.piede nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.piede .servizio {
+  margin-top: .75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  color: #d0d0d0;
+}
+.piede .servizio[hidden] { display: none; }
+.piede .spia {
+  flex: none;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: #81c784;
+  /* Col testo su due righe, all'altezza della prima. */
+  margin-top: .55em;
+}
+.piede .servizio.in-ritardo .spia { background: #ffb74d; }
+.piede .fonti {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #3a3a3a;
+  display: grid;
+  gap: .375rem;
+  color: #d0d0d0;
+}
+
+/* -------------------------------------------------------- pagina privacy */
+
+.pagina { max-width: 44rem; padding-top: 1.5rem; padding-bottom: 4rem; }
+.pagina h1 { font-size: clamp(2rem, 9vw, 3.5rem); }
+.pagina .aggiornata { margin-top: .75rem; color: var(--tenue); font-size: .9375rem; }
+.pagina > p:first-of-type { margin-top: 1.5rem; }
+.pagina h2 { margin-top: 2.75rem; font-size: clamp(1.25rem, 5vw, 1.75rem); }
+.pagina h2 + p, .pagina h2 + ul { margin-top: .75rem; }
+.pagina p + p, .pagina p + ul, .pagina ul + p { margin-top: .75rem; }
+.pagina ul { padding-left: 1.25rem; margin-bottom: 0; }
+.pagina li + li { margin-top: .375rem; }
+.pagina li::marker { color: var(--tenue); }
+.pagina .in-breve {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.25rem 1.25rem 2.5rem;
+  border-radius: var(--raggio);
+  background: var(--giallo);
+  color: var(--grafite);
+}
+.pagina .in-breve li::marker { color: var(--grafite); }
+
+/* ---------------------------------------------------- l'unica animazione
+
+   Lo stato scritto sopra è quello finale. Qui si aggiunge solo il punto
+   di partenza: linea regolare → si apre la deviazione → le fermate
+   saltano una a una → compare la risposta. Con prefers-reduced-motion
+   non parte nulla e si vede subito la fine. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .deviazione {
+    animation: apri .9s cubic-bezier(.6, 0, .3, 1) .8s both;
+  }
+  .schema li.dismesso::before {
+    animation: spegni .4s ease-out 1.6s both;
+  }
+  .chiusa .punto {
+    animation: salta-punto .25s ease-out calc(1.6s + var(--i) * 110ms) both;
+  }
+  .chiusa .punto::before,
+  .chiusa .punto::after {
+    animation: salta-croce .25s ease-out calc(1.6s + var(--i) * 110ms) both;
+  }
+  .chiusa .nome {
+    animation: salta-nome .25s ease-out calc(1.6s + var(--i) * 110ms) both;
+  }
+  .sali {
+    animation: compare .4s ease-out 2.7s both;
+  }
+  .esito .risposta {
+    animation: compare .5s ease-out 3s both;
+  }
+}
+
+@keyframes apri {
+  from { clip-path: var(--clip-da); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes spegni {
+  from {
+    border-left-style: solid; border-top-style: solid;
+    border-left-color: var(--su-giallo); border-top-color: var(--su-giallo);
+  }
+}
+@keyframes salta-punto {
+  from { background: #ffffff; border-color: var(--su-giallo); }
+}
+@keyframes salta-croce {
+  from { width: 0; }
+}
+@keyframes salta-nome {
+  from { color: var(--su-giallo); font-weight: 600; text-decoration-color: transparent; }
+}
+@keyframes compare {
+  from { opacity: 0; transform: translateY(.375rem); }
+}
+
+/* ------------------------------------------------------------- più largo */
+
+@media (min-width: 40rem) {
+  :root { --margine: 2rem; }
+
+  .marchio img { width: 9rem; }
+  .cartello { padding: 1.75rem 2rem 2rem; }
+  .cartello-testa .data { flex-basis: auto; margin-left: auto; }
+  .esito { grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .bottone { display: inline-flex; }
+  .piede .contenitore {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    column-gap: 2rem;
+  }
+  .piede .arrivo { grid-column: 1; }
+  .piede nav { grid-column: 2; grid-row: 2; justify-content: flex-end; }
+  .piede .fonti { grid-column: 1 / -1; }
+}
+
+/* Da qui lo schema si stende in orizzontale: la linea corre da sinistra a
+   destra, i nomi salgono in diagonale, la deviazione passa sotto. */
+@media (min-width: 60rem) {
+  .apertura { padding: 3.5rem 0 4rem; }
+  .apertura-sotto {
+    margin-top: 2rem;
+    padding-top: 1.75rem;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 3rem;
+    align-items: start;
+  }
+  .arrivo-app { padding-top: .2rem; }
+
+  .cartello { margin-top: 3rem; padding: 2rem 2.5rem 2.25rem; }
+
+  .tracciato {
+    --colonna: calc(100% / var(--n));
+    --linea: 10.5rem;       /* altezza della linea: sopra, i nomi inclinati */
+    margin-top: .5rem;
+  }
+  .schema {
+    display: grid;
+    grid-template-columns: repeat(var(--n), 1fr);
+    padding: 0;
+    height: calc(var(--linea) + 5rem);
+  }
+  .schema li { height: auto; display: block; padding: 0; }
+  .schema li::before {
+    left: 50%;
+    top: calc(var(--linea) - var(--spessore) / 2);
+    width: 100%;
+    height: 0;
+    border-left: 0;
+    border-top: var(--spessore) solid var(--su-giallo);
+  }
+  .schema li.dismesso::before {
+    border-left: 0;
+    border-top: var(--spessore) dashed var(--su-giallo-spento);
+  }
+  .schema li:first-child::after,
+  .schema li:last-child::after {
+    top: calc(var(--linea) - var(--spessore) / 2);
+    bottom: auto;
+    width: 50%;
+    height: 0;
+    border-left: 0;
+    border-top: var(--spessore) dotted var(--su-giallo);
+  }
+  .schema li:first-child::after { left: 0; }
+  .schema li:last-child::after  { left: 50%; }
+
+  .punto {
+    left: calc(50% - var(--punto) / 2);
+    top: calc(var(--linea) - var(--punto) / 2);
+  }
+  .fermata-testo {
+    position: absolute;
+    left: calc(50% - .25rem);
+    bottom: calc(100% - var(--linea) + 1.125rem);
+    transform-origin: 0 100%;
+    transform: rotate(-45deg);
+  }
+  .schema .codice, .schema .sali { display: none; }
+  .schema .nome { font-size: 1.125rem; }
+
+  .deviazione {
+    top: calc(var(--linea) - var(--deviata) / 2);
+    left: calc(var(--colonna) / 2 - var(--deviata) / 2);
+    width: calc(var(--colonna) * (var(--n) - 1) + var(--deviata));
+    height: 3.5rem;
+    border: var(--deviata) solid var(--su-giallo);
+    border-top: 0;
+    border-radius: 0 0 1.25rem 1.25rem;
+    --clip-da: inset(0 100% 0 0);
+  }
+
+  .esito { margin-top: .5rem; gap: 3rem; }
+
+  .sezione { padding: 5rem 0; }
+
+  .comportamento .contenitore {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 4rem;
+  }
+  .comportamento .due { margin-top: .5rem; grid-template-columns: 1fr; align-content: start; }
+
+  .schermate {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3rem;
+    align-items: start;
+  }
+  .schermata { width: 100%; max-width: 18rem; }
+
+  .domande { grid-template-columns: 1fr 1fr; column-gap: 2.5rem; }
+}
+
+@media print {
+  .testata nav, .salta-al-contenuto { display: none; }
+  .piede { background: none; color: #000; }
+}
